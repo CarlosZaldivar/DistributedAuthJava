@@ -26,5 +26,6 @@ repositories {
 dependencies {
 	compile('org.springframework.boot:spring-boot-starter-data-rest')
 	compile('org.springframework.data:spring-data-rest-hal-browser')
+    compile('commons-codec:commons-codec:1.11')
 	testCompile('org.springframework.boot:spring-boot-starter-test')
 }
