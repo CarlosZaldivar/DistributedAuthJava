@@ -1,4 +1,4 @@
-package com.github.carloszaldivar.distributedauth;
+package com.github.carloszaldivar.distributedauth.models;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;

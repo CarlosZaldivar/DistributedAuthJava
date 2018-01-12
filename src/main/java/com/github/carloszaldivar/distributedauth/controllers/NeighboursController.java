@@ -1,5 +1,7 @@
-package com.github.carloszaldivar.distributedauth;
+package com.github.carloszaldivar.distributedauth.controllers;
 
+import com.github.carloszaldivar.distributedauth.models.Neighbour;
+import com.github.carloszaldivar.distributedauth.data.Neighbours;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController

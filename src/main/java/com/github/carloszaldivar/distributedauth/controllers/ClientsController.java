@@ -1,6 +1,10 @@
-package com.github.carloszaldivar.distributedauth;
+package com.github.carloszaldivar.distributedauth.controllers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.github.carloszaldivar.distributedauth.models.Client;
+import com.github.carloszaldivar.distributedauth.data.Clients;
+import com.github.carloszaldivar.distributedauth.models.Operation;
+import com.github.carloszaldivar.distributedauth.data.Operations;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;

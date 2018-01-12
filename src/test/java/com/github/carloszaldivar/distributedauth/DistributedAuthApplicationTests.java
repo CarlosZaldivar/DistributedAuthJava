@@ -1,6 +1,12 @@
 package com.github.carloszaldivar.distributedauth;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.github.carloszaldivar.distributedauth.controllers.ClientsController;
+import com.github.carloszaldivar.distributedauth.controllers.NeighboursController;
+import com.github.carloszaldivar.distributedauth.data.Clients;
+import com.github.carloszaldivar.distributedauth.data.Neighbours;
+import com.github.carloszaldivar.distributedauth.data.Operations;
+import com.github.carloszaldivar.distributedauth.models.*;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;

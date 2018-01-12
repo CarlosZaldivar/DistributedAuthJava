@@ -1,4 +1,6 @@
-package com.github.carloszaldivar.distributedauth;
+package com.github.carloszaldivar.distributedauth.data;
+
+import com.github.carloszaldivar.distributedauth.models.Operation;
 
 import java.util.ArrayList;
 import java.util.List;

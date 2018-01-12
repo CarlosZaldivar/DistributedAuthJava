@@ -1,4 +1,4 @@
-package com.github.carloszaldivar.distributedauth;
+package com.github.carloszaldivar.distributedauth.models;
 
 public class Neighbour {
     private String id;
