@@ -5,7 +5,7 @@ import java.util.Map;
 public class ThinRequest {
     private String senderId;
     private String hash;
-    private Map<String, Object> syncTimes;
+    private Map<String, Long> syncTimes;
 
     public ThinRequest() {
     }
@@ -26,11 +26,11 @@ public class ThinRequest {
         this.hash = hash;
     }
 
-    public Map<String, Object> getSyncTimes() {
+    public Map<String, Long> getSyncTimes() {
         return syncTimes;
     }
 
-    public void setSyncTimes(Map<String, Object> syncTimes) {
+    public void setSyncTimes(Map<String, Long> syncTimes) {
         this.syncTimes = syncTimes;
     }
 }

@@ -90,23 +90,28 @@ public class SynchronizationController {
         List<Operation> historyDifference = neighbourHistory.subList(divergencePoint.getNeighbourHistoryIndex(), neighbourHistory.size());
         localHistory.addAll(historyDifference);
         apply(historyDifference);
-        updateSyncTimes();
+        updateSyncTimes(fatRequest.getSyncTimes(), fatRequest.getSenderId(), neighbourHistory.get(neighbourHistory.size() - 1).getTimestamp());
         return new FatRequestResponse(FatRequestResponse.Status.OK, Neighbours.getSyncTimes());
     }
 
     private FatRequestResponse handleLocalNotCorrect(DivergencePoint divergencePoint) {
-        List<Operation> historyToRemove = localHistory.subList(divergencePoint.getLocalHistoryIndex(), localHistory.size());
+        int localHistoryIndex = divergencePoint.getLocalHistoryIndex();
+        List<Operation> historyToRemove = localHistory.subList(localHistoryIndex, localHistory.size());
         unapply(historyToRemove);
         localHistory.removeAll(historyToRemove);
+        long lastCorrectTimestamp = localHistoryIndex > 0 ? localHistory.get(localHistoryIndex - 1).getTimestamp() : 0;
+        downgradeSyncTimes(lastCorrectTimestamp);
+
         List<Operation> historyToAdd = neighbourHistory.subList(divergencePoint.getNeighbourHistoryIndex(), neighbourHistory.size());
         apply(historyToAdd);
         localHistory.addAll(historyToAdd);
-        updateSyncTimes();
+
+        updateSyncTimes(fatRequest.getSyncTimes(), fatRequest.getSenderId(), neighbourHistory.get(neighbourHistory.size() - 1).getTimestamp());
         return new FatRequestResponse(FatRequestResponse.Status.OK, Neighbours.getSyncTimes());
     }
 
     private FatRequestResponse handleSameHistory() {
-        updateSyncTimes();
+        updateSyncTimes(fatRequest.getSyncTimes(), fatRequest.getSenderId(), neighbourHistory.get(neighbourHistory.size() - 1).getTimestamp());
         return new FatRequestResponse(FatRequestResponse.Status.OK, Neighbours.getSyncTimes());
     }
 
@@ -119,15 +124,32 @@ public class SynchronizationController {
     private FatRequestResponse handleEmptyLocalHistory() {
         localHistory.addAll(neighbourHistory);
         apply(neighbourHistory);
-        updateSyncTimes();
+        updateSyncTimes(fatRequest.getSyncTimes(), fatRequest.getSenderId(), neighbourHistory.get(neighbourHistory.size() - 1).getTimestamp());
         return new FatRequestResponse(FatRequestResponse.Status.OK, Neighbours.getSyncTimes());
     }
 
-    private void updateSyncTimes() {
-        Operation neighboursLastOperation = neighbourHistory.get(neighbourHistory.size() - 1);
-        Neighbours.getSyncTimes().put(fatRequest.getSenderId(), neighboursLastOperation.getTimestamp());
+    private void downgradeSyncTimes(long lastCorrectTimestamp) {
+        for (Map.Entry<String, Long> syncTime : Neighbours.getSyncTimes().entrySet()) {
+            if (syncTime.getValue() > lastCorrectTimestamp) {
+                Neighbours.getSyncTimes().put(syncTime.getKey(), lastCorrectTimestamp);
+            }
+        }
+    }
 
-        // TODO updating syncTimes for the rest of the neighbours. May involve putting earlier timestamps if there were conflicts.
+    /**
+     * @param senderId Id of the neighbour that sent the request. It's needed because it may be unavailable in syncTimes.
+     * @param neighboursLastTimestamp Timestamp of the last operation that the neighbour we're synchronizing with has.
+     *                                It's needed because it may be unavailable in syncTimes.
+     */
+    private void updateSyncTimes(Map<String, Long> syncTimes, String senderId, long neighboursLastTimestamp) {
+        Neighbours.getSyncTimes().put(senderId, neighboursLastTimestamp);
+
+        for (Map.Entry<String, Long> syncTime : syncTimes.entrySet()) {
+            String neighbourId = syncTime.getKey();
+            if (Neighbours.getSyncTimes().get(neighbourId) < syncTime.getValue()) {
+                Neighbours.getSyncTimes().put(neighbourId, syncTime.getValue());
+            }
+        }
     }
 
     private void apply(List<Operation> operations) {
@@ -186,7 +208,7 @@ public class SynchronizationController {
         }
 
         if (thinRequest.getHash().equals(localHistory.get(localHistory.size() - 1).getHash())) {
-            updateSyncTimes();
+            updateSyncTimes(thinRequest.getSyncTimes(), thinRequest.getSenderId(), localHistory.get(localHistory.size() - 1).getTimestamp());
             return new ThinRequestResponse(ThinRequestResponse.Status.UPDATE_NOT_NEEDED, Neighbours.getSyncTimes());
         } else {
             return new ThinRequestResponse(ThinRequestResponse.Status.UPDATE_NEEDED, Neighbours.getSyncTimes());
