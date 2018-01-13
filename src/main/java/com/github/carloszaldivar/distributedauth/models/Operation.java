@@ -1,7 +1,9 @@
 package com.github.carloszaldivar.distributedauth.models;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import org.apache.commons.codec.binary.Hex;
 
 import java.nio.charset.StandardCharsets;
@@ -57,10 +59,32 @@ public class Operation {
         this.data = data;
     }
 
+    public boolean isAfter(Operation previousOperation) throws JsonProcessingException {
+        Operation currentOperationWithoutHash = new Operation();
+        currentOperationWithoutHash.setTimestamp(this.getTimestamp());
+        currentOperationWithoutHash.setType(this.getType());
+        currentOperationWithoutHash.setData(this.getData());
+
+        String hash = calculateHash(currentOperationWithoutHash, previousOperation);
+        return hash.equals(this.getHash());
+    }
+
+    public boolean isBefore(Operation nextOperation) throws JsonProcessingException {
+        Operation nextOperationWithoutHash = new Operation();
+        nextOperationWithoutHash.setTimestamp(nextOperation.getTimestamp());
+        nextOperationWithoutHash.setType(nextOperation.getType());
+        nextOperationWithoutHash.setData(nextOperation.getData());
+
+        String hash = calculateHash(nextOperationWithoutHash, this);
+        return hash.equals(nextOperation.getHash());
+    }
+
     public enum Type { ADDING_CLIENT }
 
     public static String calculateHash(Operation newOperation, Operation previousOperation) throws JsonProcessingException {
         ObjectMapper mapper = new ObjectMapper();
+        mapper.configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
+        mapper.configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true);
         String prehashString = mapper.writeValueAsString(newOperation) +
                 (previousOperation == null ? "" : previousOperation.getHash());
 
