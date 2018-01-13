@@ -12,81 +12,75 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Map;
 
 public class Operation {
-    private String hash;
-    private long timestamp;
-    private Type type;
+    final private String hash;
+    final private long timestamp;
+    final private Type type;
+    final private int number;
 
     // JSON-like dictionary
-    private Map<String, Object> data;
+    final private Map<String, Object> data;
 
-    public Operation() {
-    }
-
-    public Operation(long timestamp, Type type) {
+    public Operation(long timestamp, Type type, int number, Map<String, Object> data, Operation previousOperation) {
         this.timestamp = timestamp;
         this.type = type;
+        this.number = number;
+        this.data = data;
+        this.hash = calculateHash(previousOperation);
     }
 
     public String getHash() {
         return hash;
     }
 
-    public void setHash(String hash) {
-        this.hash = hash;
-    }
-
     public long getTimestamp() {
         return timestamp;
-    }
-
-    public void setTimestamp(long timestamp) {
-        this.timestamp = timestamp;
     }
 
     public Type getType() {
         return type;
     }
 
-    public void setType(Type type) {
-        this.type = type;
+    public int getNumber() {
+        return number;
     }
 
     public Map<String, Object> getData() {
         return data;
     }
 
-    public void setData(Map<String, Object> data) {
-        this.data = data;
+    public boolean isAfter(Operation previousOperation) {
+        Operation calculatedCurrentOperation = new Operation(
+                this.getTimestamp(),
+                this.getType(),
+                this.getNumber(),
+                this.getData(),
+                previousOperation);
+        return calculatedCurrentOperation.getHash().equals(this.getHash());
     }
 
-    public boolean isAfter(Operation previousOperation) throws JsonProcessingException {
-        Operation currentOperationWithoutHash = new Operation();
-        currentOperationWithoutHash.setTimestamp(this.getTimestamp());
-        currentOperationWithoutHash.setType(this.getType());
-        currentOperationWithoutHash.setData(this.getData());
-
-        String hash = calculateHash(currentOperationWithoutHash, previousOperation);
-        return hash.equals(this.getHash());
-    }
-
-    public boolean isBefore(Operation nextOperation) throws JsonProcessingException {
-        Operation nextOperationWithoutHash = new Operation();
-        nextOperationWithoutHash.setTimestamp(nextOperation.getTimestamp());
-        nextOperationWithoutHash.setType(nextOperation.getType());
-        nextOperationWithoutHash.setData(nextOperation.getData());
-
-        String hash = calculateHash(nextOperationWithoutHash, this);
-        return hash.equals(nextOperation.getHash());
+    public boolean isBefore(Operation nextOperation) {
+        Operation calculatedNextOperation = new Operation(
+                nextOperation.getTimestamp(),
+                nextOperation.getType(),
+                nextOperation.getNumber(),
+                nextOperation.getData(),
+                this);
+        return calculatedNextOperation.getHash().equals(nextOperation.getHash());
     }
 
     public enum Type { ADDING_CLIENT }
 
-    public static String calculateHash(Operation newOperation, Operation previousOperation) throws JsonProcessingException {
+    private String calculateHash(Operation previousOperation) {
         ObjectMapper mapper = new ObjectMapper();
         mapper.configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
         mapper.configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true);
-        String prehashString = mapper.writeValueAsString(newOperation) +
-                (previousOperation == null ? "" : previousOperation.getHash());
+        String prehashString;
+        try {
+            prehashString = mapper.writeValueAsString(this) +
+                    (previousOperation == null ? "" : previousOperation.getHash());
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
 
         MessageDigest digest;
         try {

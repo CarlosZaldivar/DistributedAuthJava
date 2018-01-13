@@ -6,6 +6,11 @@ public class Client {
 
     public Client() { }
 
+    public Client(String number, String pin) {
+        this.number = number;
+        this.pin = pin;
+    }
+
     public String getNumber() {
         return number;
     }

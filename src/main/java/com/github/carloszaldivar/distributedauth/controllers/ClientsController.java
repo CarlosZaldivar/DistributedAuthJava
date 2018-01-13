@@ -1,6 +1,5 @@
 package com.github.carloszaldivar.distributedauth.controllers;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.github.carloszaldivar.distributedauth.models.Client;
 import com.github.carloszaldivar.distributedauth.data.Clients;
 import com.github.carloszaldivar.distributedauth.models.Operation;
@@ -21,7 +20,7 @@ import static org.springframework.web.bind.annotation.RequestMethod.POST;
 public class ClientsController {
 
     @RequestMapping(method=POST, value={"/clients"})
-    public Client create(@RequestBody Client client) throws JsonProcessingException {
+    public Client create(@RequestBody Client client) {
         validateClient(client);
         Clients.get().put(client.getNumber(), client);
         Operation addingClientOperation = createClientAddingOperation(System.currentTimeMillis(), client);
@@ -54,18 +53,20 @@ public class ClientsController {
         return error;
     }
 
-    private Operation createClientAddingOperation(long unixTimestamp, Client client) throws JsonProcessingException {
-        Operation operation = new Operation(unixTimestamp, Operation.Type.ADDING_CLIENT);
+    private Operation createClientAddingOperation(long unixTimestamp, Client client) {
+        List<Operation> operations = Operations.get();
+        Operation lastOperation = null;
+        int number = 0;
+
+        if (!operations.isEmpty()) {
+            lastOperation = Operations.get().get(Operations.get().size() - 1);
+            number = lastOperation.getNumber();
+        }
+
         Map<String, Object> operationData = new HashMap<>();
         operationData.put("number", client.getNumber());
         operationData.put("pin", client.getPin());
-        operation.setData(operationData);
 
-        List<Operation> operations = Operations.get();
-        operation.setHash(Operation.calculateHash(
-                operation,
-                operations.isEmpty() ? null : operations.get(operations.size() - 1)));
-
-        return operation;
+        return new Operation(unixTimestamp, Operation.Type.ADDING_CLIENT, number, operationData, lastOperation);
     }
 }
