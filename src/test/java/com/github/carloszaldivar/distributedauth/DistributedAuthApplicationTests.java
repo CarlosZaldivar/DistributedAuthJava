@@ -2,7 +2,8 @@ package com.github.carloszaldivar.distributedauth;
 
 import com.github.carloszaldivar.distributedauth.controllers.ClientsController;
 import com.github.carloszaldivar.distributedauth.controllers.NeighboursController;
-import com.github.carloszaldivar.distributedauth.controllers.SynchronizationController;
+import com.github.carloszaldivar.distributedauth.controllers.FatRequestController;
+import com.github.carloszaldivar.distributedauth.controllers.ThinRequestController;
 import com.github.carloszaldivar.distributedauth.data.Clients;
 import com.github.carloszaldivar.distributedauth.data.Neighbours;
 import com.github.carloszaldivar.distributedauth.data.Operations;
@@ -59,8 +60,8 @@ public class DistributedAuthApplicationTests {
         request.setHistory(Collections.singletonList(operation));
         request.setSyncTimes(new HashMap<>());
 
-        SynchronizationController synchronizationController = new SynchronizationController();
-        FatRequestResponse response = synchronizationController.handleFatRequest(request);
+        FatRequestController fatRequestController = new FatRequestController();
+        FatRequestResponse response = fatRequestController.handleFatRequest(request);
 
         Assert.assertTrue(response.getStatus() == FatRequestResponse.Status.OK);
         Assert.assertEquals(operation, Operations.get().get(0));
@@ -80,8 +81,8 @@ public class DistributedAuthApplicationTests {
         request.setHistory(Collections.singletonList(Operations.get().get(0)));
         request.setSyncTimes(new HashMap<>());
 
-        SynchronizationController synchronizationController = new SynchronizationController();
-        FatRequestResponse response = synchronizationController.handleFatRequest(request);
+        FatRequestController fatRequestController = new FatRequestController();
+        FatRequestResponse response = fatRequestController.handleFatRequest(request);
 
         Assert.assertTrue(response.getStatus() == FatRequestResponse.Status.OK);
         Assert.assertEquals(1, Operations.get().size());
@@ -103,8 +104,8 @@ public class DistributedAuthApplicationTests {
         Assert.assertTrue(request.getHistory().get(0).isBefore(request.getHistory().get(1)));
         request.setSyncTimes(new HashMap<>());
 
-        SynchronizationController synchronizationController = new SynchronizationController();
-        FatRequestResponse response = synchronizationController.handleFatRequest(request);
+        FatRequestController fatRequestController = new FatRequestController();
+        FatRequestResponse response = fatRequestController.handleFatRequest(request);
 
         Assert.assertTrue(response.getStatus() == FatRequestResponse.Status.OK);
         Assert.assertEquals(2, Operations.get().size());
@@ -125,8 +126,8 @@ public class DistributedAuthApplicationTests {
         request.setHistory(Collections.singletonList(Operations.get().get(0)));
         request.setSyncTimes(new HashMap<>());
 
-        SynchronizationController synchronizationController = new SynchronizationController();
-        FatRequestResponse response = synchronizationController.handleFatRequest(request);
+        FatRequestController fatRequestController = new FatRequestController();
+        FatRequestResponse response = fatRequestController.handleFatRequest(request);
 
         Assert.assertTrue(response.getStatus() == FatRequestResponse.Status.U2OLD);
         Assert.assertEquals(2, Operations.get().size());
@@ -153,8 +154,8 @@ public class DistributedAuthApplicationTests {
         request.setHistory(Arrays.asList(firstOperation, secondOperation));
         request.setSyncTimes(new HashMap<>());
 
-        SynchronizationController synchronizationController = new SynchronizationController();
-        FatRequestResponse response = synchronizationController.handleFatRequest(request);
+        FatRequestController fatRequestController = new FatRequestController();
+        FatRequestResponse response = fatRequestController.handleFatRequest(request);
 
         Assert.assertTrue(response.getStatus() == FatRequestResponse.Status.OK);
         Assert.assertEquals(2, Operations.get().size());
@@ -177,8 +178,8 @@ public class DistributedAuthApplicationTests {
         request.setHistory(Arrays.asList(firstOperation, thirdOperation));
         request.setSyncTimes(new HashMap<>());
 
-        SynchronizationController synchronizationController = new SynchronizationController();
-        FatRequestResponse response = synchronizationController.handleFatRequest(request);
+        FatRequestController fatRequestController = new FatRequestController();
+        FatRequestResponse response = fatRequestController.handleFatRequest(request);
 
         Assert.assertTrue(response.getStatus() == FatRequestResponse.Status.CONFLICT);
     }
@@ -196,8 +197,8 @@ public class DistributedAuthApplicationTests {
         Operation operation = createFirstOperation(100);
         Operations.get().add(operation);
 
-        SynchronizationController synchronizationController = new SynchronizationController();
-        ThinRequestResponse response = synchronizationController.handleThinRequest(request);
+        ThinRequestController thinRequestController = new ThinRequestController();
+        ThinRequestResponse response = thinRequestController.handleThinRequest(request);
         Assert.assertEquals(ThinRequestResponse.Status.UPDATE_NOT_NEEDED, response.getStatus());
     }
 
@@ -211,8 +212,8 @@ public class DistributedAuthApplicationTests {
         request.setHash("a44b99bb6206ea2e45fe442819e30e37f521d99a98ed9a8319a4246214627b2d");
         request.setSyncTimes(new HashMap<>());
 
-        SynchronizationController synchronizationController = new SynchronizationController();
-        ThinRequestResponse response = synchronizationController.handleThinRequest(request);
+        ThinRequestController thinRequestController = new ThinRequestController();
+        ThinRequestResponse response = thinRequestController.handleThinRequest(request);
         Assert.assertEquals(ThinRequestResponse.Status.UPDATE_NEEDED, response.getStatus());
     }
 

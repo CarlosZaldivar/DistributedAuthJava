@@ -12,7 +12,7 @@ import java.util.Map;
 
 import static org.springframework.web.bind.annotation.RequestMethod.POST;
 
-public class SynchronizationController {
+public class FatRequestController {
     private List<Operation> localHistory;
     private List<Operation> neighbourHistory;
     private FatRequest fatRequest;
@@ -90,7 +90,7 @@ public class SynchronizationController {
         List<Operation> historyDifference = neighbourHistory.subList(divergencePoint.getNeighbourHistoryIndex(), neighbourHistory.size());
         localHistory.addAll(historyDifference);
         apply(historyDifference);
-        updateSyncTimes(fatRequest.getSyncTimes(), fatRequest.getSenderId(), neighbourHistory.get(neighbourHistory.size() - 1).getTimestamp());
+        updateSyncTimes(fatRequest.getSyncTimes());
         return new FatRequestResponse(FatRequestResponse.Status.OK, Neighbours.getSyncTimes());
     }
 
@@ -106,12 +106,12 @@ public class SynchronizationController {
         apply(historyToAdd);
         localHistory.addAll(historyToAdd);
 
-        updateSyncTimes(fatRequest.getSyncTimes(), fatRequest.getSenderId(), neighbourHistory.get(neighbourHistory.size() - 1).getTimestamp());
+        updateSyncTimes(fatRequest.getSyncTimes());
         return new FatRequestResponse(FatRequestResponse.Status.OK, Neighbours.getSyncTimes());
     }
 
     private FatRequestResponse handleSameHistory() {
-        updateSyncTimes(fatRequest.getSyncTimes(), fatRequest.getSenderId(), neighbourHistory.get(neighbourHistory.size() - 1).getTimestamp());
+        updateSyncTimes(fatRequest.getSyncTimes());
         return new FatRequestResponse(FatRequestResponse.Status.OK, Neighbours.getSyncTimes());
     }
 
@@ -124,7 +124,7 @@ public class SynchronizationController {
     private FatRequestResponse handleEmptyLocalHistory() {
         localHistory.addAll(neighbourHistory);
         apply(neighbourHistory);
-        updateSyncTimes(fatRequest.getSyncTimes(), fatRequest.getSenderId(), neighbourHistory.get(neighbourHistory.size() - 1).getTimestamp());
+        updateSyncTimes(fatRequest.getSyncTimes());
         return new FatRequestResponse(FatRequestResponse.Status.OK, Neighbours.getSyncTimes());
     }
 
@@ -136,13 +136,9 @@ public class SynchronizationController {
         }
     }
 
-    /**
-     * @param senderId Id of the neighbour that sent the request. It's needed because it may be unavailable in syncTimes.
-     * @param neighboursLastTimestamp Timestamp of the last operation that the neighbour we're synchronizing with has.
-     *                                It's needed because it may be unavailable in syncTimes.
-     */
-    private void updateSyncTimes(Map<String, Long> syncTimes, String senderId, long neighboursLastTimestamp) {
-        Neighbours.getSyncTimes().put(senderId, neighboursLastTimestamp);
+    private void updateSyncTimes(Map<String, Long> syncTimes) {
+        long neighboursLastTimestamp = neighbourHistory.get(neighbourHistory.size() - 1).getTimestamp();
+        Neighbours.getSyncTimes().put(fatRequest.getSenderId(), neighboursLastTimestamp);
 
         for (Map.Entry<String, Long> syncTime : syncTimes.entrySet()) {
             String neighbourId = syncTime.getKey();
@@ -197,21 +193,5 @@ public class SynchronizationController {
         }
 
         public enum Type { LOCAL_TOO_OLD, NEIGHBOUR_TOO_OLD, LOCAL_NOT_CORRECT, NEIGHBOUR_NOT_CORRECT }
-    }
-
-    @RequestMapping(method=POST, value={"/thin"})
-    public ThinRequestResponse handleThinRequest(@RequestBody ThinRequest thinRequest) {
-        localHistory = Operations.get();
-
-        if (localHistory.isEmpty()) {
-            return new ThinRequestResponse(ThinRequestResponse.Status.UPDATE_NEEDED, Neighbours.getSyncTimes());
-        }
-
-        if (thinRequest.getHash().equals(localHistory.get(localHistory.size() - 1).getHash())) {
-            updateSyncTimes(thinRequest.getSyncTimes(), thinRequest.getSenderId(), localHistory.get(localHistory.size() - 1).getTimestamp());
-            return new ThinRequestResponse(ThinRequestResponse.Status.UPDATE_NOT_NEEDED, Neighbours.getSyncTimes());
-        } else {
-            return new ThinRequestResponse(ThinRequestResponse.Status.UPDATE_NEEDED, Neighbours.getSyncTimes());
-        }
     }
 }
