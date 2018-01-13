@@ -183,6 +183,39 @@ public class DistributedAuthApplicationTests {
         Assert.assertTrue(response.getStatus() == FatRequestResponse.Status.CONFLICT);
     }
 
+    @Test
+    public void thinRequestEqualHistoryTest() {
+        NeighboursController neighboursController = new NeighboursController();
+        neighboursController.addNeighbour(neighbour);
+
+        ThinRequest request = new ThinRequest();
+        request.setSenderId(neighbour.getId());
+        request.setHash("9548d50bf82d7d29a220fe5923798bd494f2ff9f60e735825f6d09ccc317d995");
+        request.setSyncTimes(new HashMap<>());
+
+        Operation operation = createFirstOperation(100);
+        Operations.get().add(operation);
+
+        SynchronizationController synchronizationController = new SynchronizationController();
+        ThinRequestResponse response = synchronizationController.handleThinRequest(request);
+        Assert.assertEquals(ThinRequestResponse.Status.UPDATE_NOT_NEEDED, response.getStatus());
+    }
+
+    @Test
+    public void thinRequestDifferentHistoryTest() {
+        NeighboursController neighboursController = new NeighboursController();
+        neighboursController.addNeighbour(neighbour);
+
+        ThinRequest request = new ThinRequest();
+        request.setSenderId(neighbour.getId());
+        request.setHash("a44b99bb6206ea2e45fe442819e30e37f521d99a98ed9a8319a4246214627b2d");
+        request.setSyncTimes(new HashMap<>());
+
+        SynchronizationController synchronizationController = new SynchronizationController();
+        ThinRequestResponse response = synchronizationController.handleThinRequest(request);
+        Assert.assertEquals(ThinRequestResponse.Status.UPDATE_NEEDED, response.getStatus());
+    }
+
     @After
     public void cleanSingletons() {
         Clients.get().clear();

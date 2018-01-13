@@ -2,14 +2,10 @@ package com.github.carloszaldivar.distributedauth.controllers;
 
 import com.github.carloszaldivar.distributedauth.data.Clients;
 import com.github.carloszaldivar.distributedauth.data.Neighbours;
-import com.github.carloszaldivar.distributedauth.models.Client;
-import com.github.carloszaldivar.distributedauth.models.FatRequest;
-import com.github.carloszaldivar.distributedauth.models.FatRequestResponse;
-import com.github.carloszaldivar.distributedauth.models.Operation;
+import com.github.carloszaldivar.distributedauth.models.*;
 import com.github.carloszaldivar.distributedauth.data.Operations;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.util.List;
 import java.util.Map;
@@ -46,9 +42,9 @@ public class SynchronizationController {
                 return handleLocalNotCorrect(divergencePoint);
             case NEIGHBOUR_NOT_CORRECT:
                 return new FatRequestResponse(FatRequestResponse.Status.CONFLICT, Neighbours.getSyncTimes());
+            default:
+                throw new RuntimeException("Unexpected divergence point.");
         }
-
-        throw new NotImplementedException();
     }
 
     private DivergencePoint findDivergencePoint(List<Operation> localHistory, List<Operation> neighbourHistory) {
@@ -179,5 +175,21 @@ public class SynchronizationController {
         }
 
         public enum Type { LOCAL_TOO_OLD, NEIGHBOUR_TOO_OLD, LOCAL_NOT_CORRECT, NEIGHBOUR_NOT_CORRECT }
+    }
+
+    @RequestMapping(method=POST, value={"/thin"})
+    public ThinRequestResponse handleThinRequest(@RequestBody ThinRequest thinRequest) {
+        localHistory = Operations.get();
+
+        if (localHistory.isEmpty()) {
+            return new ThinRequestResponse(ThinRequestResponse.Status.UPDATE_NEEDED, Neighbours.getSyncTimes());
+        }
+
+        if (thinRequest.getHash().equals(localHistory.get(localHistory.size() - 1).getHash())) {
+            updateSyncTimes();
+            return new ThinRequestResponse(ThinRequestResponse.Status.UPDATE_NOT_NEEDED, Neighbours.getSyncTimes());
+        } else {
+            return new ThinRequestResponse(ThinRequestResponse.Status.UPDATE_NEEDED, Neighbours.getSyncTimes());
+        }
     }
 }

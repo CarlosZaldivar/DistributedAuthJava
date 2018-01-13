@@ -2,11 +2,11 @@ package com.github.carloszaldivar.distributedauth.models;
 
 import java.util.Map;
 
-public class FatRequestResponse {
+public class ThinRequestResponse {
     private Status status;
     private Map<String, Long> syncTimes;
 
-    public FatRequestResponse(Status status, Map<String, Long> syncTimes) {
+    public ThinRequestResponse(Status status, Map<String, Long> syncTimes) {
         this.status = status;
         this.syncTimes = syncTimes;
     }
@@ -19,5 +19,5 @@ public class FatRequestResponse {
         return syncTimes;
     }
 
-    public enum Status { OK, CONFLICT, U2OLD }
+    public enum Status { UPDATE_NOT_NEEDED, UPDATE_NEEDED }
 }
