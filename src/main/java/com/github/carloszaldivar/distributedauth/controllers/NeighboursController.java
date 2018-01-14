@@ -11,8 +11,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.security.InvalidParameterException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static org.springframework.web.bind.annotation.RequestMethod.POST;
 
 @RestController
@@ -26,6 +28,12 @@ public class NeighboursController {
         Neighbours.getSyncTimes().put(neighbour.getId(), 0L);
         logger.info(String.format("Neighbour %s with URL %s added.", neighbour.getId(), neighbour.getUrl()));
         return neighbour;
+    }
+
+    @RequestMapping(method=GET, value={"/neighbours"})
+    public List<Neighbour> listNeighbours() {
+        logger.info("Returning list of neighbours");
+        return Neighbours.get();
     }
 
     private void validateNeighbour(Neighbour neighbour) {
