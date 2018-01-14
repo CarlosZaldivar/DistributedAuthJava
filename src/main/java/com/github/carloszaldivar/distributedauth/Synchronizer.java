@@ -22,14 +22,19 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class Synchronizer {
     private Logger logger = LoggerFactory.getLogger("com.github.carloszaldivar.distributedauth.Synchronizer");
 
     public void sendFatRequests() {
         for (Neighbour neighbour : Neighbours.get()) {
-            logger.info(String.format("Sending FatRequest to %s with URL %s", neighbour.getId(), neighbour.getUrl()));
             List<Operation> historyDifference = getHistoryDifference(neighbour);
+            if (historyDifference.isEmpty()) {
+                continue;
+            }
+
+            logger.info(String.format("Sending FatRequest to %s with URL %s", neighbour.getId(), neighbour.getUrl()));
             FatRequest fatRequest = new FatRequest(DistributedAuthApplication.getInstanceName(), historyDifference, Neighbours.getSyncTimes());
 
             CloseableHttpAsyncClient client = HttpAsyncClients.createDefault();
@@ -63,7 +68,7 @@ public class Synchronizer {
                     }
 
                     logger.info(String.format("Got response to FatRequest to %s. Response status: %s", neighbour.getId(), fatRequestResponse.getStatus()));
-                    handleFastRequestResponse(neighbour, fatRequestResponse);
+                    handleFastRequestResponse(neighbour, historyDifference, fatRequestResponse);
                 }
 
                 @Override
@@ -90,8 +95,27 @@ public class Synchronizer {
         }
     }
 
-    private void handleFastRequestResponse(Neighbour neighbour, FatRequestResponse fatRequestResponse) {
-        // TODO
+    private void handleFastRequestResponse(Neighbour neighbour, List<Operation> historyDifferece, FatRequestResponse fatRequestResponse) {
+        switch (fatRequestResponse.getStatus()) {
+            case OK:
+                long neighbourSyncTime = historyDifferece.get(historyDifferece.size() - 1).getTimestamp();
+                updateSyncTimes(fatRequestResponse.getSyncTimes(), neighbour.getId(), neighbourSyncTime);
+                break;
+            case U2OLD:
+                DistributedAuthApplication.setState(DistributedAuthApplication.State.TOO_OLD);
+            case CONFLICT:
+                DistributedAuthApplication.setState(DistributedAuthApplication.State.CONFLICT);
+        }
+    }
+
+    private void updateSyncTimes(Map<String, Long> syncTimes, String senderId, long sendersLastTimestamp) {
+        Neighbours.getSyncTimes().put(senderId, sendersLastTimestamp);
+        for (Map.Entry<String, Long> syncTime : syncTimes.entrySet()) {
+            String neighbourId = syncTime.getKey();
+            if (Neighbours.getSyncTimes().get(neighbourId) < syncTime.getValue()) {
+                Neighbours.getSyncTimes().put(neighbourId, syncTime.getValue());
+            }
+        }
     }
 
     private HttpPost createHttpRequest(FatRequest fatRequest, Neighbour neighbour) {

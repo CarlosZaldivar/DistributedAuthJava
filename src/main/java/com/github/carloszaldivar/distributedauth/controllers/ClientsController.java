@@ -1,5 +1,6 @@
 package com.github.carloszaldivar.distributedauth.controllers;
 
+import com.github.carloszaldivar.distributedauth.DistributedAuthApplication;
 import com.github.carloszaldivar.distributedauth.Synchronizer;
 import com.github.carloszaldivar.distributedauth.models.*;
 import com.github.carloszaldivar.distributedauth.data.Clients;
@@ -24,6 +25,7 @@ public class ClientsController {
 
     @RequestMapping(method=POST, value={"/clients"})
     public Client create(@RequestBody Client client) {
+        checkServerState();
         validateClient(client);
         Clients.get().put(client.getNumber(), client);
         Operation addingClientOperation = createClientAddingOperation(System.currentTimeMillis(), client);
@@ -31,6 +33,13 @@ public class ClientsController {
         logger.info("Created client " + client.getNumber());
         (new Synchronizer()).sendFatRequests();
         return client;
+    }
+
+    private void checkServerState() {
+        if (DistributedAuthApplication.getState() == DistributedAuthApplication.State.CONFLICT ||
+                DistributedAuthApplication.getState() == DistributedAuthApplication.State.TOO_OLD) {
+            throw new IllegalStateException("Server is in invalid state. Waiting for updates.");
+        }
     }
 
     private void validateClient(Client client)
@@ -51,7 +60,7 @@ public class ClientsController {
         }
     }
 
-    @ExceptionHandler(InvalidParameterException.class)
+    @ExceptionHandler({InvalidParameterException.class, IllegalStateException.class})
     private Map<String, String> handleException(InvalidParameterException exception) {
         Map<String, String> error = new HashMap<>();
         error.put("error", exception.getMessage());
