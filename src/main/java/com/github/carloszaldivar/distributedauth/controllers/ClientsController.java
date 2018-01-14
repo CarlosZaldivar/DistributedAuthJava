@@ -13,11 +13,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.security.InvalidParameterException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import static org.springframework.web.bind.annotation.RequestMethod.POST;
+import static org.springframework.web.bind.annotation.RequestMethod.GET;
 
 @RestController
 public class ClientsController {
@@ -33,6 +35,12 @@ public class ClientsController {
         logger.info("Created client " + client.getNumber());
         (new Synchronizer()).sendFatRequests();
         return client;
+    }
+
+    @RequestMapping(method=GET, value={"/clients"})
+    public List<Client> list() {
+        logger.info("Returning list of clients.");
+        return new ArrayList<>(Clients.get().values());
     }
 
     private void checkServerState() {
