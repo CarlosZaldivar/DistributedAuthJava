@@ -1,9 +1,14 @@
 package com.github.carloszaldivar.distributedauth.models;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class Neighbour {
-    private String id;
-    private String url;
-    public Neighbour(String id, String url) {
+    final private String id;
+    final private String url;
+
+    @JsonCreator
+    public Neighbour(@JsonProperty("id") String id, @JsonProperty("url") String url) {
         this.id = id;
         this.url = url;
     }
@@ -12,15 +17,7 @@ public class Neighbour {
         return id;
     }
 
-    public void setId(String id) {
-        this.id = id;
-    }
-
     public String getUrl() {
         return url;
-    }
-
-    public void setUrl(String url) {
-        this.url = url;
     }
 }

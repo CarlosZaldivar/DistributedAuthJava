@@ -5,8 +5,29 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
 public class DistributedAuthApplication {
+	private static String instanceName;
+	private static State state = State.SYNCHRONIZED;
+
+	public enum State { SYNCHRONIZED, UNSYNCHRONIZED, CONFLICT, TOO_OLD }
 
 	public static void main(String[] args) {
-		SpringApplication.run(DistributedAuthApplication.class, args);
+        if (args.length > 1) {
+	        instanceName = args[0];
+        } else {
+	        instanceName = "test-" + System.currentTimeMillis();
+        }
+        SpringApplication.run(DistributedAuthApplication.class, args);
 	}
+
+    public static String getInstanceName() {
+        return instanceName;
+    }
+
+    public static State getState() {
+        return state;
+    }
+
+    public static void setState(State state) {
+        DistributedAuthApplication.state = state;
+    }
 }

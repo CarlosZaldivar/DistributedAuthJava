@@ -1,8 +1,8 @@
 package com.github.carloszaldivar.distributedauth.controllers;
 
-import com.github.carloszaldivar.distributedauth.models.Client;
+import com.github.carloszaldivar.distributedauth.Synchronizer;
+import com.github.carloszaldivar.distributedauth.models.*;
 import com.github.carloszaldivar.distributedauth.data.Clients;
-import com.github.carloszaldivar.distributedauth.models.Operation;
 import com.github.carloszaldivar.distributedauth.data.Operations;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -25,6 +25,7 @@ public class ClientsController {
         Clients.get().put(client.getNumber(), client);
         Operation addingClientOperation = createClientAddingOperation(System.currentTimeMillis(), client);
         Operations.get().add(addingClientOperation);
+        (new Synchronizer()).sendFatRequests();
         return client;
     }
 

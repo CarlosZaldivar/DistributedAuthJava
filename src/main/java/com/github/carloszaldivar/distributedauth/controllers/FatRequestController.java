@@ -4,14 +4,19 @@ import com.github.carloszaldivar.distributedauth.data.Clients;
 import com.github.carloszaldivar.distributedauth.data.Neighbours;
 import com.github.carloszaldivar.distributedauth.models.*;
 import com.github.carloszaldivar.distributedauth.data.Operations;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
+import java.security.InvalidParameterException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import static org.springframework.web.bind.annotation.RequestMethod.POST;
 
+@RestController
 public class FatRequestController {
     private List<Operation> localHistory;
     private List<Operation> neighbourHistory;
@@ -19,6 +24,7 @@ public class FatRequestController {
 
     @RequestMapping(method=POST, value={"/fat"})
     public FatRequestResponse handleFatRequest(@RequestBody FatRequest fatRequest) {
+        validateFatRequest(fatRequest);
         neighbourHistory = fatRequest.getHistory();
         localHistory = Operations.get();
         this.fatRequest = fatRequest;
@@ -45,6 +51,20 @@ public class FatRequestController {
             default:
                 throw new RuntimeException("Unexpected divergence point.");
         }
+    }
+
+    private void validateFatRequest(FatRequest fatRequest) {
+        if (fatRequest == null) {
+            throw new InvalidParameterException("FatRequest is null");
+        }
+        // TODO Add more checking (low priority)
+    }
+
+    @ExceptionHandler(InvalidParameterException.class)
+    private Map<String, String> handleException(InvalidParameterException exception) {
+        Map<String, String> error = new HashMap<>();
+        error.put("error", exception.getMessage());
+        return error;
     }
 
     private DivergencePoint findDivergencePoint(List<Operation> localHistory, List<Operation> neighbourHistory) {
@@ -142,7 +162,8 @@ public class FatRequestController {
 
         for (Map.Entry<String, Long> syncTime : syncTimes.entrySet()) {
             String neighbourId = syncTime.getKey();
-            if (Neighbours.getSyncTimes().get(neighbourId) < syncTime.getValue()) {
+            if (Neighbours.getSyncTimes().containsKey(neighbourId) &&
+                    Neighbours.getSyncTimes().get(neighbourId) < syncTime.getValue()) {
                 Neighbours.getSyncTimes().put(neighbourId, syncTime.getValue());
             }
         }

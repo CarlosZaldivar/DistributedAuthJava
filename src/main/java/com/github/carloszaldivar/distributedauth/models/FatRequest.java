@@ -9,6 +9,15 @@ public class FatRequest {
     private List<Operation> history;
     private Map<String, Long> syncTimes;
 
+    public FatRequest() {
+    }
+
+    public FatRequest(String senderId, List<Operation> history, Map<String, Long> syncTimes) {
+        this.senderId = senderId;
+        this.history = history;
+        this.syncTimes = syncTimes;
+    }
+
     public List<Operation> getHistory() {
         return history;
     }

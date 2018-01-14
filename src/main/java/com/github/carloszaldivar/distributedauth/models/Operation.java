@@ -1,5 +1,8 @@
 package com.github.carloszaldivar.distributedauth.models;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -11,6 +14,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Map;
 
+@JsonPropertyOrder({ "data", "hash", "number", "timestamp", "type" })
 public class Operation {
     final private String hash;
     final private long timestamp;
@@ -20,7 +24,12 @@ public class Operation {
     // JSON-like dictionary
     final private Map<String, Object> data;
 
-    public Operation(long timestamp, Type type, int number, Map<String, Object> data, Operation previousOperation) {
+    @JsonCreator
+    public Operation(@JsonProperty("timestamp") long timestamp,
+                     @JsonProperty("type") Type type,
+                     @JsonProperty("number") int number,
+                     @JsonProperty("data") Map<String, Object> data,
+                     @JsonProperty("previousOperation") Operation previousOperation) {
         this.timestamp = timestamp;
         this.type = type;
         this.number = number;
