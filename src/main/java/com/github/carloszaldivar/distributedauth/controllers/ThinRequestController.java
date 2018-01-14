@@ -1,5 +1,6 @@
 package com.github.carloszaldivar.distributedauth.controllers;
 
+import com.github.carloszaldivar.distributedauth.DistributedAuthApplication;
 import com.github.carloszaldivar.distributedauth.data.Neighbours;
 import com.github.carloszaldivar.distributedauth.data.Operations;
 import com.github.carloszaldivar.distributedauth.models.Operation;
@@ -25,19 +26,21 @@ public class ThinRequestController {
         logger.info("Received ThinRequest from " + thinRequest.getSenderId());
         List<Operation> localHistory = Operations.get();
 
+        ThinRequestResponse response;
         if (localHistory.isEmpty()) {
             logger.info("Update needed. Asking sender to send FatRequest.");
-            return new ThinRequestResponse(ThinRequestResponse.Status.UPDATE_NEEDED, Neighbours.getSyncTimes());
-        }
-
-        if (thinRequest.getHash().equals(localHistory.get(localHistory.size() - 1).getHash())) {
+            response =  new ThinRequestResponse(ThinRequestResponse.Status.UPDATE_NEEDED, Neighbours.getSyncTimes());
+        } else if (thinRequest.getHash().equals(localHistory.get(localHistory.size() - 1).getHash())) {
             logger.info("Update not needed.");
             updateSyncTimes(thinRequest.getSyncTimes(), thinRequest.getSenderId(), localHistory.get(localHistory.size() - 1).getTimestamp());
-            return new ThinRequestResponse(ThinRequestResponse.Status.UPDATE_NOT_NEEDED, Neighbours.getSyncTimes());
+            response = new ThinRequestResponse(ThinRequestResponse.Status.UPDATE_NOT_NEEDED, Neighbours.getSyncTimes());
         } else {
             logger.info("Update needed. Asking sender to send FatRequest.");
-            return new ThinRequestResponse(ThinRequestResponse.Status.UPDATE_NEEDED, Neighbours.getSyncTimes());
+            response = new ThinRequestResponse(ThinRequestResponse.Status.UPDATE_NEEDED, Neighbours.getSyncTimes());
         }
+
+        DistributedAuthApplication.updateState();
+        return response;
     }
 
     /**

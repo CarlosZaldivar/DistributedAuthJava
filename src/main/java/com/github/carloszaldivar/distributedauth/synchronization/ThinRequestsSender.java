@@ -29,21 +29,28 @@ public class ThinRequestsSender {
 
     @Scheduled(fixedRate = 1000)
     public void sendThinRequests() {
-        int requestsSent = 0;
-        if (shouldSend()) {
-            Operation lastOperation = Operations.get().get(Operations.get().size() - 1);
-            Map<String, Long> syncTimes = Neighbours.getSyncTimes();
-            for (Neighbour neighbour : Neighbours.get()) {
-                if (syncTimes.get(neighbour.getId()) < lastOperation.getTimestamp()) {
-                    sendThinRequest(neighbour, syncTimes, lastOperation);
-                    logger.info("Thin request sent to " + neighbour.getId());
-                    ++requestsSent;
-                }
-            }
+        if (DistributedAuthApplication.getState() == DistributedAuthApplication.State.SYNCHRONIZED) {
+            logger.info("Not sending thin requests - server synchronized.");
+            return;
         }
 
-        if (requestsSent == 0){
-            logger.info("No thin requests sent.");
+        if (DistributedAuthApplication.getState() == DistributedAuthApplication.State.CONFLICT) {
+            logger.info("Not sending thin requests - server has incorrect information.");
+            return;
+        }
+
+        if (DistributedAuthApplication.getState() == DistributedAuthApplication.State.TOO_OLD) {
+            logger.info("Not sending thin requests - server has outdated information.");
+            return;
+        }
+
+        Operation lastOperation = Operations.get().get(Operations.get().size() - 1);
+        Map<String, Long> syncTimes = Neighbours.getSyncTimes();
+        for (Neighbour neighbour : Neighbours.get()) {
+            if (syncTimes.get(neighbour.getId()) < lastOperation.getTimestamp()) {
+                sendThinRequest(neighbour, syncTimes, lastOperation);
+                logger.info("Thin request sent to " + neighbour.getId());
+            }
         }
     }
 
@@ -108,8 +115,11 @@ public class ThinRequestsSender {
         switch (thinRequestResponse.getStatus()) {
             case UPDATE_NEEDED:
                 (new FatRequestsSender()).sendFatRequest(neighbour);
+                break;
             case UPDATE_NOT_NEEDED:
                 updateSyncTimes(thinRequestResponse.getSyncTimes(), neighbour.getId(), lastOperation.getTimestamp());
+                DistributedAuthApplication.updateState();
+                break;
         }
     }
 
@@ -121,13 +131,6 @@ public class ThinRequestsSender {
                 Neighbours.getSyncTimes().put(neighbourId, syncTime.getValue());
             }
         }
-    }
-
-    private boolean shouldSend() {
-        // TODO It can be checked if the state is Synchronized.
-        return !Operations.get().isEmpty() &&
-                DistributedAuthApplication.getState() != DistributedAuthApplication.State.CONFLICT &&
-                DistributedAuthApplication.getState() != DistributedAuthApplication.State.TOO_OLD;
     }
 
     private HttpPost createHttpRequest(ThinRequest thinRequest, Neighbour neighbour) {

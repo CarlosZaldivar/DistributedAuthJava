@@ -35,14 +35,20 @@ public class FatRequestController {
         localHistory = Operations.get();
         this.fatRequest = fatRequest;
 
+        FatRequestResponse response;
         if (localHistory.isEmpty()) {
-            return handleEmptyLocalHistory();
+            response = handleEmptyLocalHistory();
+        } else if (sameHistory()) {
+            response = handleSameHistory();
+        } else {
+            response = handleDifferentHistories();
         }
 
-        if (sameHistory()) {
-            return handleSameHistory();
-        }
+        DistributedAuthApplication.updateState();
+        return response;
+    }
 
+    private FatRequestResponse handleDifferentHistories() {
         DivergencePoint divergencePoint = findDivergencePoint(localHistory, neighbourHistory);
 
         switch (divergencePoint.getType()) {

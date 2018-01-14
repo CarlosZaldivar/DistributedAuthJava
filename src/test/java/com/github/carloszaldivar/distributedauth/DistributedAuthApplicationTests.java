@@ -48,6 +48,10 @@ public class DistributedAuthApplicationTests {
         return new Operation(timestamp, Operation.Type.ADDING_CLIENT, 1, thirdClientData, firstOperation);
     }
 
+    public DistributedAuthApplicationTests() {
+        DistributedAuthApplication.setHistoryCleaning(false);
+    }
+
     @Test
     public void fatRequestLocalEmptyTest() {
         NeighboursController neighboursController = new NeighboursController();

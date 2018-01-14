@@ -34,6 +34,7 @@ public class ClientsController {
         Operations.get().add(addingClientOperation);
         logger.info("Created client " + client.getNumber());
         (new FatRequestsSender()).sendFatRequests();
+        DistributedAuthApplication.setState(DistributedAuthApplication.State.UNSYNCHRONIZED);
         return client;
     }
 

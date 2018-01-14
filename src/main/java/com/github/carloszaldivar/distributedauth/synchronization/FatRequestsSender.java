@@ -40,11 +40,14 @@ public class FatRequestsSender {
             case OK:
                 long neighbourSyncTime = historyDifferece.get(historyDifferece.size() - 1).getTimestamp();
                 updateSyncTimes(fatRequestResponse.getSyncTimes(), neighbour.getId(), neighbourSyncTime);
+                DistributedAuthApplication.updateState();
                 break;
             case U2OLD:
                 DistributedAuthApplication.setState(DistributedAuthApplication.State.TOO_OLD);
+                break;
             case CONFLICT:
                 DistributedAuthApplication.setState(DistributedAuthApplication.State.CONFLICT);
+                break;
         }
     }
 
