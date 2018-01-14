@@ -1,7 +1,8 @@
-package com.github.carloszaldivar.distributedauth;
+package com.github.carloszaldivar.distributedauth.synchronization;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.carloszaldivar.distributedauth.DistributedAuthApplication;
 import com.github.carloszaldivar.distributedauth.data.Neighbours;
 import com.github.carloszaldivar.distributedauth.data.Operations;
 import com.github.carloszaldivar.distributedauth.models.FatRequest;
@@ -25,78 +26,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public class Synchronizer {
-    private Logger logger = LoggerFactory.getLogger("com.github.carloszaldivar.distributedauth.Synchronizer");
+public class FatRequestsSender {
+    private Logger logger = LoggerFactory.getLogger("com.github.carloszaldivar.distributedauth.synchronization.FatRequestsSender");
 
     public void sendFatRequests() {
         for (Neighbour neighbour : Neighbours.get()) {
-            List<Operation> historyDifference = getHistoryDifference(neighbour);
-            if (historyDifference.isEmpty()) {
-                continue;
-            }
-
-            logger.info(String.format("Sending FatRequest to %s with URL %s", neighbour.getId(), neighbour.getUrl()));
-            FatRequest fatRequest = new FatRequest(DistributedAuthApplication.getInstanceName(), historyDifference, Neighbours.getSyncTimes());
-
-            CloseableHttpAsyncClient client = HttpAsyncClients.createDefault();
-            client.start();
-
-            HttpPost httpRequest = createHttpRequest(fatRequest, neighbour);
-
-            client.execute(httpRequest, new FutureCallback<HttpResponse>() {
-                @Override
-                public void completed(HttpResponse result) {
-                    String responseJson;
-                    try {
-                        responseJson = EntityUtils.toString(result.getEntity());
-                    } catch (IOException e) {
-                        return;
-                    }
-
-                    FatRequestResponse fatRequestResponse;
-                    try {
-                        ObjectMapper mapper = new ObjectMapper();
-                        fatRequestResponse = mapper.readValue(responseJson, FatRequestResponse.class);
-                    } catch (IOException e) {
-                        System.out.println(e.getMessage());
-                        throw new RuntimeException(e);
-                    }
-
-                    try {
-                        client.close();
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
-
-                    logger.info(String.format("Got response to FatRequest to %s. Response status: %s", neighbour.getId(), fatRequestResponse.getStatus()));
-                    handleFastRequestResponse(neighbour, historyDifference, fatRequestResponse);
-                }
-
-                @Override
-                public void failed(Exception ex) {
-                    logger.info(String.format("Failed to get response from %s to our FatRequest.", neighbour.getId()));
-                    try {
-                        client.close();
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-
-                @Override
-                public void cancelled() {
-                    logger.info((String.format("FatRequest to %s canceled.", neighbour.getId())));
-                    try {
-                        client.close();
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
-                    throw new RuntimeException("Request canceled");
-                }
-            });
+            sendFatRequest(neighbour);
         }
     }
 
-    private void handleFastRequestResponse(Neighbour neighbour, List<Operation> historyDifferece, FatRequestResponse fatRequestResponse) {
+    private void handleFatRequestResponse(Neighbour neighbour, List<Operation> historyDifferece, FatRequestResponse fatRequestResponse) {
         switch (fatRequestResponse.getStatus()) {
             case OK:
                 long neighbourSyncTime = historyDifferece.get(historyDifferece.size() - 1).getTimestamp();
@@ -160,5 +99,71 @@ public class Synchronizer {
             ++i;
         }
         return operations.size() > (i + 1) ? operations.subList(i + 1, operations.size()) : new ArrayList<>();
+    }
+
+    public void sendFatRequest(Neighbour neighbour) {
+        List<Operation> historyDifference = getHistoryDifference(neighbour);
+        if (historyDifference.isEmpty()) {
+            return;
+        }
+
+        logger.info(String.format("Sending FatRequest to %s with URL %s", neighbour.getId(), neighbour.getUrl()));
+        FatRequest fatRequest = new FatRequest(DistributedAuthApplication.getInstanceName(), historyDifference, Neighbours.getSyncTimes());
+
+        CloseableHttpAsyncClient client = HttpAsyncClients.createDefault();
+        client.start();
+
+        HttpPost httpRequest = createHttpRequest(fatRequest, neighbour);
+
+        client.execute(httpRequest, new FutureCallback<HttpResponse>() {
+            @Override
+            public void completed(HttpResponse result) {
+                String responseJson;
+                try {
+                    responseJson = EntityUtils.toString(result.getEntity());
+                } catch (IOException e) {
+                    return;
+                }
+
+                FatRequestResponse fatRequestResponse;
+                try {
+                    ObjectMapper mapper = new ObjectMapper();
+                    fatRequestResponse = mapper.readValue(responseJson, FatRequestResponse.class);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+
+                try {
+                    client.close();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+
+                logger.info(String.format("Got response to FatRequest to %s. Response status: %s", neighbour.getId(), fatRequestResponse.getStatus()));
+                handleFatRequestResponse(neighbour, historyDifference, fatRequestResponse);
+            }
+
+            @Override
+            public void failed(Exception ex) {
+                logger.info(String.format("Failed to get response from %s to our FatRequest.", neighbour.getId()));
+                try {
+                    client.close();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+
+            @Override
+            public void cancelled() {
+                logger.info((String.format("FatRequest to %s canceled.", neighbour.getId())));
+                try {
+                    client.close();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+                throw new RuntimeException("Request canceled");
+            }
+        });
+
     }
 }

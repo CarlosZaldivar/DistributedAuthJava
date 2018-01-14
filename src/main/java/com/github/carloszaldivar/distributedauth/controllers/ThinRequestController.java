@@ -42,15 +42,16 @@ public class ThinRequestController {
 
     /**
      * @param senderId Id of the neighbour that sent the request. It's needed because it may be unavailable in syncTimes.
-     * @param senderssLastTimestamp Timestamp of the last operation that the neighbour we're synchronizing with has.
+     * @param sendersLastTimestamp Timestamp of the last operation that the neighbour we're synchronizing with has.
      *                                It's needed because it may be unavailable in syncTimes.
      */
-    private void updateSyncTimes(Map<String, Long> syncTimes, String senderId, long senderssLastTimestamp) {
-        Neighbours.getSyncTimes().put(senderId, senderssLastTimestamp);
+    private void updateSyncTimes(Map<String, Long> syncTimes, String senderId, long sendersLastTimestamp) {
+        Neighbours.getSyncTimes().put(senderId, sendersLastTimestamp);
 
         for (Map.Entry<String, Long> syncTime : syncTimes.entrySet()) {
             String neighbourId = syncTime.getKey();
-            if (Neighbours.getSyncTimes().get(neighbourId) < syncTime.getValue()) {
+            if (Neighbours.getSyncTimes().containsKey(neighbourId) &&
+                    Neighbours.getSyncTimes().get(neighbourId) < syncTime.getValue()) {
                 Neighbours.getSyncTimes().put(neighbourId, syncTime.getValue());
             }
         }

@@ -2,8 +2,10 @@ package com.github.carloszaldivar.distributedauth;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
+@EnableScheduling
 public class DistributedAuthApplication {
 	private static String instanceName;
 	private static State state = State.SYNCHRONIZED;

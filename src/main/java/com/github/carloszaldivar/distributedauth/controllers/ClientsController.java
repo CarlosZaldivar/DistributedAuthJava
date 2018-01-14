@@ -1,7 +1,7 @@
 package com.github.carloszaldivar.distributedauth.controllers;
 
 import com.github.carloszaldivar.distributedauth.DistributedAuthApplication;
-import com.github.carloszaldivar.distributedauth.Synchronizer;
+import com.github.carloszaldivar.distributedauth.synchronization.FatRequestsSender;
 import com.github.carloszaldivar.distributedauth.models.*;
 import com.github.carloszaldivar.distributedauth.data.Clients;
 import com.github.carloszaldivar.distributedauth.data.Operations;
@@ -33,7 +33,7 @@ public class ClientsController {
         Operation addingClientOperation = createClientAddingOperation(System.currentTimeMillis(), client);
         Operations.get().add(addingClientOperation);
         logger.info("Created client " + client.getNumber());
-        (new Synchronizer()).sendFatRequests();
+        (new FatRequestsSender()).sendFatRequests();
         return client;
     }
 
