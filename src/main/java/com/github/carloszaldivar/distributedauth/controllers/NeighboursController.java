@@ -2,6 +2,8 @@ package com.github.carloszaldivar.distributedauth.controllers;
 
 import com.github.carloszaldivar.distributedauth.models.Neighbour;
 import com.github.carloszaldivar.distributedauth.data.Neighbours;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -15,11 +17,14 @@ import static org.springframework.web.bind.annotation.RequestMethod.POST;
 
 @RestController
 public class NeighboursController {
+    private Logger logger = LoggerFactory.getLogger("com.github.carloszaldivar.distributedauth.controllers.NeighboursController");
+
     @RequestMapping(method=POST, value={"/neighbours"})
     public Neighbour addNeighbour(@RequestBody Neighbour neighbour) {
         validateNeighbour(neighbour);
         Neighbours.get().add(neighbour);
         Neighbours.getSyncTimes().put(neighbour.getId(), 0L);
+        logger.info(String.format("Neighbour %s with URL %s added.", neighbour.getId(), neighbour.getUrl()));
         return neighbour;
     }
 

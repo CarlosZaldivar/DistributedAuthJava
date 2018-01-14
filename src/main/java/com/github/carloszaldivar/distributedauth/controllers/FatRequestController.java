@@ -4,6 +4,8 @@ import com.github.carloszaldivar.distributedauth.data.Clients;
 import com.github.carloszaldivar.distributedauth.data.Neighbours;
 import com.github.carloszaldivar.distributedauth.models.*;
 import com.github.carloszaldivar.distributedauth.data.Operations;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,6 +20,8 @@ import static org.springframework.web.bind.annotation.RequestMethod.POST;
 
 @RestController
 public class FatRequestController {
+    private Logger logger = LoggerFactory.getLogger("com.github.carloszaldivar.distributedauth.controllers.FatRequestsController");
+
     private List<Operation> localHistory;
     private List<Operation> neighbourHistory;
     private FatRequest fatRequest;
@@ -25,6 +29,7 @@ public class FatRequestController {
     @RequestMapping(method=POST, value={"/fat"})
     public FatRequestResponse handleFatRequest(@RequestBody FatRequest fatRequest) {
         validateFatRequest(fatRequest);
+        logger.info("Got FatRequest from " + fatRequest.getSenderId());
         neighbourHistory = fatRequest.getHistory();
         localHistory = Operations.get();
         this.fatRequest = fatRequest;
@@ -41,12 +46,16 @@ public class FatRequestController {
 
         switch (divergencePoint.getType()) {
             case LOCAL_TOO_OLD:
+                logger.info("Local history was not up to date. Updating.");
                 return handleLocalTooOld(divergencePoint);
             case NEIGHBOUR_TOO_OLD:
+                logger.info("Sender's history was not up to date. Informing him about it.");
                 return new FatRequestResponse(FatRequestResponse.Status.U2OLD, Neighbours.getSyncTimes());
             case LOCAL_NOT_CORRECT:
+                logger.info("Local history was incorrect. Fixing it.");
                 return handleLocalNotCorrect(divergencePoint);
             case NEIGHBOUR_NOT_CORRECT:
+                logger.info("Sender's history was incorrect. Informing him about it.");
                 return new FatRequestResponse(FatRequestResponse.Status.CONFLICT, Neighbours.getSyncTimes());
             default:
                 throw new RuntimeException("Unexpected divergence point.");

@@ -4,6 +4,8 @@ import com.github.carloszaldivar.distributedauth.Synchronizer;
 import com.github.carloszaldivar.distributedauth.models.*;
 import com.github.carloszaldivar.distributedauth.data.Clients;
 import com.github.carloszaldivar.distributedauth.data.Operations;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,6 +20,7 @@ import static org.springframework.web.bind.annotation.RequestMethod.POST;
 
 @RestController
 public class ClientsController {
+    private Logger logger = LoggerFactory.getLogger("com.github.carloszaldivar.distributedauth.controllers.ClientsController");
 
     @RequestMapping(method=POST, value={"/clients"})
     public Client create(@RequestBody Client client) {
@@ -25,6 +28,7 @@ public class ClientsController {
         Clients.get().put(client.getNumber(), client);
         Operation addingClientOperation = createClientAddingOperation(System.currentTimeMillis(), client);
         Operations.get().add(addingClientOperation);
+        logger.info("Created client " + client.getNumber());
         (new Synchronizer()).sendFatRequests();
         return client;
     }

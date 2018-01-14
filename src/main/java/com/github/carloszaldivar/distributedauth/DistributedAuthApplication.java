@@ -11,7 +11,7 @@ public class DistributedAuthApplication {
 	public enum State { SYNCHRONIZED, UNSYNCHRONIZED, CONFLICT, TOO_OLD }
 
 	public static void main(String[] args) {
-        if (args.length > 1) {
+        if (args.length > 0) {
 	        instanceName = args[0];
         } else {
 	        instanceName = "test-" + System.currentTimeMillis();

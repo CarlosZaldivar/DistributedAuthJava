@@ -15,6 +15,8 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
 import org.apache.http.impl.nio.client.HttpAsyncClients;
 import org.apache.http.util.EntityUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -22,8 +24,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Synchronizer {
+    private Logger logger = LoggerFactory.getLogger("com.github.carloszaldivar.distributedauth.Synchronizer");
+
     public void sendFatRequests() {
         for (Neighbour neighbour : Neighbours.get()) {
+            logger.info(String.format("Sending FatRequest to %s with URL %s", neighbour.getId(), neighbour.getUrl()));
             List<Operation> historyDifference = getHistoryDifference(neighbour);
             FatRequest fatRequest = new FatRequest(DistributedAuthApplication.getInstanceName(), historyDifference, Neighbours.getSyncTimes());
 
@@ -38,15 +43,16 @@ public class Synchronizer {
                     String responseJson;
                     try {
                         responseJson = EntityUtils.toString(result.getEntity());
-                        System.out.println(responseJson);
                     } catch (IOException e) {
                         return;
                     }
+
+                    FatRequestResponse fatRequestResponse;
                     try {
                         ObjectMapper mapper = new ObjectMapper();
-                        FatRequestResponse fatRequestResponse = mapper.readValue(responseJson, FatRequestResponse.class);
-                        handleFastRequestResponse(neighbour, fatRequestResponse);
+                        fatRequestResponse = mapper.readValue(responseJson, FatRequestResponse.class);
                     } catch (IOException e) {
+                        System.out.println(e.getMessage());
                         throw new RuntimeException(e);
                     }
 
@@ -55,10 +61,14 @@ public class Synchronizer {
                     } catch (IOException e) {
                         throw new RuntimeException(e);
                     }
+
+                    logger.info(String.format("Got response to FatRequest to %s. Response status: %s", neighbour.getId(), fatRequestResponse.getStatus()));
+                    handleFastRequestResponse(neighbour, fatRequestResponse);
                 }
 
                 @Override
                 public void failed(Exception ex) {
+                    logger.info(String.format("Failed to get response from %s to our FatRequest.", neighbour.getId()));
                     try {
                         client.close();
                     } catch (IOException e) {
@@ -68,7 +78,7 @@ public class Synchronizer {
 
                 @Override
                 public void cancelled() {
-                    System.out.println("Canceled");
+                    logger.info((String.format("FatRequest to %s canceled.", neighbour.getId())));
                     try {
                         client.close();
                     } catch (IOException e) {

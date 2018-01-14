@@ -5,6 +5,8 @@ import com.github.carloszaldivar.distributedauth.data.Operations;
 import com.github.carloszaldivar.distributedauth.models.Operation;
 import com.github.carloszaldivar.distributedauth.models.ThinRequest;
 import com.github.carloszaldivar.distributedauth.models.ThinRequestResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -16,18 +18,24 @@ import static org.springframework.web.bind.annotation.RequestMethod.POST;
 
 @RestController
 public class ThinRequestController {
+    private Logger logger = LoggerFactory.getLogger("com.github.carloszaldivar.distributedauth.controllers.ThinRequestController");
+
     @RequestMapping(method=POST, value={"/thin"})
     public ThinRequestResponse handleThinRequest(@RequestBody ThinRequest thinRequest) {
+        logger.info("Received ThinRequest from " + thinRequest.getSenderId());
         List<Operation> localHistory = Operations.get();
 
         if (localHistory.isEmpty()) {
+            logger.info("Update needed. Asking sender to send FatRequest.");
             return new ThinRequestResponse(ThinRequestResponse.Status.UPDATE_NEEDED, Neighbours.getSyncTimes());
         }
 
         if (thinRequest.getHash().equals(localHistory.get(localHistory.size() - 1).getHash())) {
+            logger.info("Update not needed.");
             updateSyncTimes(thinRequest.getSyncTimes(), thinRequest.getSenderId(), localHistory.get(localHistory.size() - 1).getTimestamp());
             return new ThinRequestResponse(ThinRequestResponse.Status.UPDATE_NOT_NEEDED, Neighbours.getSyncTimes());
         } else {
+            logger.info("Update needed. Asking sender to send FatRequest.");
             return new ThinRequestResponse(ThinRequestResponse.Status.UPDATE_NEEDED, Neighbours.getSyncTimes());
         }
     }
