@@ -9,6 +9,7 @@ import com.github.carloszaldivar.distributedauth.models.FatRequestResponse;
 import com.github.carloszaldivar.distributedauth.models.Neighbour;
 import com.github.carloszaldivar.distributedauth.models.Operation;
 import org.apache.http.HttpResponse;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.concurrent.FutureCallback;
 import org.apache.http.entity.StringEntity;
@@ -134,6 +135,16 @@ public class Synchronizer {
         } catch (UnsupportedEncodingException e) {
             throw new RuntimeException(e);
         }
+
+        int timeout = 30 * 1000; // Timeout in millis.
+        RequestConfig requestConfig = RequestConfig.custom()
+                .setConnectionRequestTimeout(timeout)
+                .setConnectTimeout(timeout)
+                .setSocketTimeout(timeout)
+                .build();
+
+        httpRequest.setConfig(requestConfig);
+
         return httpRequest;
     }
 
