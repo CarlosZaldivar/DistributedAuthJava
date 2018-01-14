@@ -1,5 +1,6 @@
 package com.github.carloszaldivar.distributedauth.controllers;
 
+import com.github.carloszaldivar.distributedauth.DistributedAuthApplication;
 import com.github.carloszaldivar.distributedauth.data.Clients;
 import com.github.carloszaldivar.distributedauth.data.Neighbours;
 import com.github.carloszaldivar.distributedauth.models.*;
@@ -120,6 +121,7 @@ public class FatRequestController {
         localHistory.addAll(historyDifference);
         apply(historyDifference);
         updateSyncTimes(fatRequest.getSyncTimes());
+        DistributedAuthApplication.setState(DistributedAuthApplication.State.UNSYNCHRONIZED);
         return new FatRequestResponse(FatRequestResponse.Status.OK, Neighbours.getSyncTimes());
     }
 
@@ -136,6 +138,7 @@ public class FatRequestController {
         localHistory.addAll(historyToAdd);
 
         updateSyncTimes(fatRequest.getSyncTimes());
+        DistributedAuthApplication.setState(DistributedAuthApplication.State.UNSYNCHRONIZED);
         return new FatRequestResponse(FatRequestResponse.Status.OK, Neighbours.getSyncTimes());
     }
 
