@@ -9,6 +9,8 @@ import org.apache.commons.text.CharacterPredicates;
 import org.apache.commons.text.RandomStringGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.InvalidParameterException;
@@ -26,7 +28,7 @@ public class ClientsController {
     private Logger logger = LoggerFactory.getLogger("com.github.carloszaldivar.distributedauth.controllers.ClientsController");
 
     @RequestMapping(method=POST, value={"/clients"})
-    public Client create(@RequestBody Client client) {
+    public ResponseEntity create(@RequestBody Client client) {
         checkServerState();
         validateClient(client);
         addPasswordLists(client);
@@ -36,24 +38,17 @@ public class ClientsController {
         logger.info("Created client " + client.getNumber());
         (new FatRequestsSender()).sendFatRequests();
         DistributedAuthApplication.setState(DistributedAuthApplication.State.UNSYNCHRONIZED);
-        return client;
+        return new ResponseEntity(HttpStatus.CREATED);
     }
 
     @RequestMapping(method=GET, value={"/clients"})
-    public List<Client> list() {
+    public ResponseEntity<List<Client>> list() {
         logger.info("Returning list of clients.");
-        return new ArrayList<>(Clients.get().values());
-    }
-
-    private void checkServerState() {
-        if (DistributedAuthApplication.getState() == DistributedAuthApplication.State.CONFLICT ||
-                DistributedAuthApplication.getState() == DistributedAuthApplication.State.TOO_OLD) {
-            throw new IllegalStateException("Server is in invalid state. Waiting for updates.");
-        }
+        return new ResponseEntity<>(new ArrayList<>(Clients.get().values()), HttpStatus.OK);
     }
 
     @RequestMapping(method=DELETE, value={"/clients/{id}"})
-    public Map<String, String> delete(@PathVariable(value="id") String clientNumber) {
+    public ResponseEntity delete(@PathVariable(value="id") String clientNumber) {
         checkServerState();
         validateClientNumber(clientNumber);
         Client client = Clients.get().get(clientNumber);
@@ -63,9 +58,19 @@ public class ClientsController {
         logger.info("Removed client " + client.getNumber());
         (new FatRequestsSender()).sendFatRequests();
         DistributedAuthApplication.setState(DistributedAuthApplication.State.UNSYNCHRONIZED);
-        Map<String, String> response = new HashMap<>();
-        response.put("status", "ok");
-        return response;
+        return new ResponseEntity(HttpStatus.NO_CONTENT);
+    }
+
+    @ExceptionHandler({InvalidParameterException.class, IllegalStateException.class})
+    private ResponseEntity<String> handleException(InvalidParameterException exception) {
+        return new ResponseEntity<>(exception.getMessage(), HttpStatus.BAD_REQUEST);
+    }
+
+    private void checkServerState() {
+        if (DistributedAuthApplication.getState() == DistributedAuthApplication.State.CONFLICT ||
+                DistributedAuthApplication.getState() == DistributedAuthApplication.State.TOO_OLD) {
+            throw new IllegalStateException("Server is in invalid state. Waiting for updates.");
+        }
     }
 
     private void validateClient(Client client)
@@ -108,13 +113,6 @@ public class ClientsController {
 
         client.setActivatedList(new OneTimePasswordList(activePasswords));
         client.setNonactivatedList(new OneTimePasswordList((inactivePasswords)));
-    }
-
-    @ExceptionHandler({InvalidParameterException.class, IllegalStateException.class})
-    private Map<String, String> handleException(InvalidParameterException exception) {
-        Map<String, String> error = new HashMap<>();
-        error.put("error", exception.getMessage());
-        return error;
     }
 
     private Operation createClientAddingOperation(long unixTimestamp, Client client) {

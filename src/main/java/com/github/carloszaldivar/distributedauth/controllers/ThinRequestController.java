@@ -8,6 +8,8 @@ import com.github.carloszaldivar.distributedauth.models.ThinRequest;
 import com.github.carloszaldivar.distributedauth.models.ThinRequestResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -22,7 +24,7 @@ public class ThinRequestController {
     private Logger logger = LoggerFactory.getLogger("com.github.carloszaldivar.distributedauth.controllers.ThinRequestController");
 
     @RequestMapping(method=POST, value={"/thin"})
-    public ThinRequestResponse handleThinRequest(@RequestBody ThinRequest thinRequest) {
+    public ResponseEntity<ThinRequestResponse> handleThinRequest(@RequestBody ThinRequest thinRequest) {
         logger.info("Received ThinRequest from " + thinRequest.getSenderId());
         List<Operation> localHistory = Operations.get();
 
@@ -40,7 +42,7 @@ public class ThinRequestController {
         }
 
         DistributedAuthApplication.updateState();
-        return response;
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
     /**

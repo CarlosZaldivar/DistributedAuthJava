@@ -69,7 +69,7 @@ public class DistributedAuthApplicationTests {
         FatRequest request = new FatRequest(neighbour.getId(), Collections.singletonList(operation), new HashMap<>());
 
         FatRequestController fatRequestController = new FatRequestController();
-        FatRequestResponse response = fatRequestController.handleFatRequest(request);
+        FatRequestResponse response = fatRequestController.handleFatRequest(request).getBody();
 
         Assert.assertTrue(response.getStatus() == FatRequestResponse.Status.OK);
         Assert.assertEquals(operation, Operations.get().get(0));
@@ -87,7 +87,7 @@ public class DistributedAuthApplicationTests {
         FatRequest request = new FatRequest(neighbour.getId(), Collections.singletonList(Operations.get().get(0)), new HashMap<>());
 
         FatRequestController fatRequestController = new FatRequestController();
-        FatRequestResponse response = fatRequestController.handleFatRequest(request);
+        FatRequestResponse response = fatRequestController.handleFatRequest(request).getBody();
 
         Assert.assertTrue(response.getStatus() == FatRequestResponse.Status.OK);
         Assert.assertEquals(1, Operations.get().size());
@@ -108,7 +108,7 @@ public class DistributedAuthApplicationTests {
         Assert.assertTrue(request.getHistory().get(0).isBefore(request.getHistory().get(1)));
 
         FatRequestController fatRequestController = new FatRequestController();
-        FatRequestResponse response = fatRequestController.handleFatRequest(request);
+        FatRequestResponse response = fatRequestController.handleFatRequest(request).getBody();
 
         Assert.assertTrue(response.getStatus() == FatRequestResponse.Status.OK);
         Assert.assertEquals(2, Operations.get().size());
@@ -127,7 +127,7 @@ public class DistributedAuthApplicationTests {
         FatRequest request = new FatRequest(neighbour.getId(), Collections.singletonList(Operations.get().get(0)), new HashMap<>());
 
         FatRequestController fatRequestController = new FatRequestController();
-        FatRequestResponse response = fatRequestController.handleFatRequest(request);
+        FatRequestResponse response = fatRequestController.handleFatRequest(request).getBody();
 
         Assert.assertTrue(response.getStatus() == FatRequestResponse.Status.U2OLD);
         Assert.assertEquals(2, Operations.get().size());
@@ -151,7 +151,7 @@ public class DistributedAuthApplicationTests {
         FatRequest request = new FatRequest(neighbour.getId(), Arrays.asList(firstOperation, secondOperation), new HashMap<>());
 
         FatRequestController fatRequestController = new FatRequestController();
-        FatRequestResponse response = fatRequestController.handleFatRequest(request);
+        FatRequestResponse response = fatRequestController.handleFatRequest(request).getBody();
 
         Assert.assertTrue(response.getStatus() == FatRequestResponse.Status.OK);
         Assert.assertEquals(2, Operations.get().size());
@@ -172,7 +172,7 @@ public class DistributedAuthApplicationTests {
         FatRequest request = new FatRequest(neighbour.getId(), Arrays.asList(firstOperation, thirdOperation), new HashMap<>());
 
         FatRequestController fatRequestController = new FatRequestController();
-        FatRequestResponse response = fatRequestController.handleFatRequest(request);
+        FatRequestResponse response = fatRequestController.handleFatRequest(request).getBody();
 
         Assert.assertTrue(response.getStatus() == FatRequestResponse.Status.CONFLICT);
     }
@@ -189,7 +189,7 @@ public class DistributedAuthApplicationTests {
         Operations.get().add(operation);
 
         ThinRequestController thinRequestController = new ThinRequestController();
-        ThinRequestResponse response = thinRequestController.handleThinRequest(request);
+        ThinRequestResponse response = thinRequestController.handleThinRequest(request).getBody();
         Assert.assertEquals(ThinRequestResponse.Status.UPDATE_NOT_NEEDED, response.getStatus());
     }
 
@@ -202,7 +202,7 @@ public class DistributedAuthApplicationTests {
         ThinRequest request = new ThinRequest(neighbour.getId(), hash, new HashMap<>());
 
         ThinRequestController thinRequestController = new ThinRequestController();
-        ThinRequestResponse response = thinRequestController.handleThinRequest(request);
+        ThinRequestResponse response = thinRequestController.handleThinRequest(request).getBody();
         Assert.assertEquals(ThinRequestResponse.Status.UPDATE_NEEDED, response.getStatus());
     }
 

@@ -7,13 +7,14 @@ import com.github.carloszaldivar.distributedauth.models.*;
 import com.github.carloszaldivar.distributedauth.data.Operations;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.security.InvalidParameterException;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -28,7 +29,7 @@ public class FatRequestController {
     private FatRequest fatRequest;
 
     @RequestMapping(method=POST, value={"/fat"})
-    public FatRequestResponse handleFatRequest(@RequestBody FatRequest fatRequest) {
+    public ResponseEntity<FatRequestResponse> handleFatRequest(@RequestBody FatRequest fatRequest) {
         validateFatRequest(fatRequest);
         logger.info("Got FatRequest from " + fatRequest.getSenderId());
         neighbourHistory = fatRequest.getHistory();
@@ -45,7 +46,13 @@ public class FatRequestController {
         }
 
         DistributedAuthApplication.updateState();
-        return response;
+        HttpStatus httpStatus = response.getStatus() == FatRequestResponse.Status.OK ? HttpStatus.OK : HttpStatus.CONFLICT;
+        return new ResponseEntity<>(response, httpStatus);
+    }
+
+    @ExceptionHandler(InvalidParameterException.class)
+    private ResponseEntity<String> handleException(InvalidParameterException exception) {
+        return new ResponseEntity<>(exception.getMessage(), HttpStatus.BAD_REQUEST);
     }
 
     private FatRequestResponse handleDifferentHistories() {
@@ -74,13 +81,6 @@ public class FatRequestController {
             throw new InvalidParameterException("FatRequest is null");
         }
         // TODO Add more checking (low priority)
-    }
-
-    @ExceptionHandler(InvalidParameterException.class)
-    private Map<String, String> handleException(InvalidParameterException exception) {
-        Map<String, String> error = new HashMap<>();
-        error.put("error", exception.getMessage());
-        return error;
     }
 
     private DivergencePoint findDivergencePoint(List<Operation> localHistory, List<Operation> neighbourHistory) {
