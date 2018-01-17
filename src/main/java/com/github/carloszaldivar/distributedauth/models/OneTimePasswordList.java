@@ -36,4 +36,11 @@ public class OneTimePasswordList {
     public int getCurrentIndex() {
         return currentIndex;
     }
+
+    public void usePassword() {
+        if (currentIndex == PASSWORDS_PER_LIST) {
+            throw new RuntimeException("All passwords already used.");
+        }
+        ++currentIndex;
+    }
 }

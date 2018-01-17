@@ -5,8 +5,6 @@ import com.github.carloszaldivar.distributedauth.synchronization.FatRequestsSend
 import com.github.carloszaldivar.distributedauth.models.*;
 import com.github.carloszaldivar.distributedauth.data.Clients;
 import com.github.carloszaldivar.distributedauth.data.Operations;
-import org.apache.commons.text.CharacterPredicates;
-import org.apache.commons.text.RandomStringGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -30,7 +28,7 @@ public class ClientsController {
     public ResponseEntity create(@RequestBody Client client) {
         checkServerState();
         validateClient(client);
-        addPasswordLists(client);
+        client.generateOneTimePasswordLists();
         Clients.get().put(client.getNumber(), client);
         Operation addingClientOperation = createClientAddingOperation(System.currentTimeMillis(), client);
         Operations.get().add(addingClientOperation);
@@ -75,9 +73,43 @@ public class ClientsController {
         return new ResponseEntity(httpStatus);
     }
 
-    @ExceptionHandler({IllegalArgumentException.class, IllegalStateException.class})
+    @RequestMapping(method=POST, value={"/clients/{id}/authorize"})
+    public ResponseEntity authorizeOperation(@PathVariable(value="id") String clientNumber, @RequestBody AuthorizationRequest request)
+    {
+        validateClientNumber(clientNumber);
+        validateAuthorizationData(Clients.get().get(clientNumber), request);
+        Client client = Clients.get().get(clientNumber);
+        HttpStatus status = request.getPin().equals(client.getPin()) && client.useOneTimePassword(request.getOneTimePassword()) ?
+                HttpStatus.OK : HttpStatus.UNAUTHORIZED;
+        return new ResponseEntity(status);
+    }
+
+    @RequestMapping(method=POST, value={"/clients/{id}/activatelist"})
+    public ResponseEntity activateNewPasswordList(@PathVariable(value="id") String clientNumber, @RequestBody AuthorizationRequest request) {
+        validateClientNumber(clientNumber);
+        Client client = Clients.get().get(clientNumber);
+        HttpStatus status = request.getPin().equals(client.getPin()) && client.activateNewOneTimePasswordList(request.getOneTimePassword()) ?
+                HttpStatus.OK : HttpStatus.UNAUTHORIZED;
+        return new ResponseEntity(status);
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
     private ResponseEntity<String> handleException(IllegalArgumentException exception) {
-        return new ResponseEntity<>(exception.getMessage(), HttpStatus.BAD_REQUEST);
+        return handleException((Exception) exception);
+    }
+
+    @ExceptionHandler(IllegalStateException.class)
+    private ResponseEntity<String> handleException(IllegalStateException exception) {
+        return handleException((Exception) exception);
+    }
+
+    @ExceptionHandler(RuntimeException.class)
+    private ResponseEntity<String> handleException(RuntimeException exception) {
+        return handleException((Exception) exception);
+    }
+
+    private ResponseEntity<String> handleException(Exception e) {
+        return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
     }
 
     private void checkServerState() {
@@ -112,21 +144,10 @@ public class ClientsController {
         }
     }
 
-    private void addPasswordLists(Client client) {
-        RandomStringGenerator randomStringGenerator =
-                new RandomStringGenerator.Builder()
-                        .withinRange('0', 'z')
-                        .filteredBy(CharacterPredicates.LETTERS, CharacterPredicates.DIGITS)
-                        .build();
-        List<String> activePasswords = new ArrayList<>();
-        List<String> inactivePasswords = new ArrayList<>();
-        for (int i = 0; i < OneTimePasswordList.PASSWORDS_PER_LIST; ++i) {
-            activePasswords.add(randomStringGenerator.generate(OneTimePasswordList.PASSWORDS_LENGTH));
-            inactivePasswords.add(randomStringGenerator.generate(OneTimePasswordList.PASSWORDS_LENGTH));
+    private void validateAuthorizationData(Client client, AuthorizationRequest request) {
+        if (request.getPin() == null || request.getOneTimePassword() == null) {
+            throw new IllegalArgumentException("PIN and password should be provided.");
         }
-
-        client.setActivatedList(new OneTimePasswordList(activePasswords));
-        client.setNonactivatedList(new OneTimePasswordList((inactivePasswords)));
     }
 
     private Operation createClientAddingOperation(long unixTimestamp, Client client) {
