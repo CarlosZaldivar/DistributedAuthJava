@@ -14,7 +14,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.security.InvalidParameterException;
 import java.util.List;
 import java.util.Map;
 
@@ -50,8 +49,8 @@ public class FatRequestController {
         return new ResponseEntity<>(response, httpStatus);
     }
 
-    @ExceptionHandler(InvalidParameterException.class)
-    private ResponseEntity<String> handleException(InvalidParameterException exception) {
+    @ExceptionHandler(IllegalArgumentException.class)
+    private ResponseEntity<String> handleException(IllegalArgumentException exception) {
         return new ResponseEntity<>(exception.getMessage(), HttpStatus.BAD_REQUEST);
     }
 
@@ -78,7 +77,7 @@ public class FatRequestController {
 
     private void validateFatRequest(FatRequest fatRequest) {
         if (fatRequest == null) {
-            throw new InvalidParameterException("FatRequest is null");
+            throw new IllegalArgumentException("FatRequest is null");
         }
         // TODO Add more checking (low priority)
     }

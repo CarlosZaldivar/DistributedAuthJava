@@ -13,7 +13,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -64,7 +63,7 @@ public class ClientsController {
     @RequestMapping(method=POST, value={"/clients/{id}/authenticate"})
     public ResponseEntity authenticate(@PathVariable(value="id") String clientNumber, @RequestBody String pin) {
         if (clientNumber == null || pin == null) {
-            throw new InvalidParameterException("Client number and PIN should be provided.");
+            throw new IllegalArgumentException("Client number and PIN should be provided.");
         }
 
         HttpStatus httpStatus;
@@ -76,8 +75,8 @@ public class ClientsController {
         return new ResponseEntity(httpStatus);
     }
 
-    @ExceptionHandler({InvalidParameterException.class, IllegalStateException.class})
-    private ResponseEntity<String> handleException(InvalidParameterException exception) {
+    @ExceptionHandler({IllegalArgumentException.class, IllegalStateException.class})
+    private ResponseEntity<String> handleException(IllegalArgumentException exception) {
         return new ResponseEntity<>(exception.getMessage(), HttpStatus.BAD_REQUEST);
     }
 
@@ -92,24 +91,24 @@ public class ClientsController {
     {
         String number = client.getNumber();
         if (!(number.matches("[0-9]+") && number.length() == 6)) {
-            throw new InvalidParameterException("Client number should consist of 6 digits.");
+            throw new IllegalArgumentException("Client number should consist of 6 digits.");
         }
 
         String pin = client.getPin();
         if (!(pin.matches("[0-9]+") && pin.length() == 4))
         {
-            throw new InvalidParameterException("PIN should consist of 4 digits.");
+            throw new IllegalArgumentException("PIN should consist of 4 digits.");
         }
 
         if (Clients.get().containsKey(number)) {
-            throw new InvalidParameterException("Client with this number already exists.");
+            throw new IllegalArgumentException("Client with this number already exists.");
         }
     }
 
 
     private void validateClientNumber(String clientNumber) {
         if (!Clients.get().containsKey(clientNumber)) {
-            throw new InvalidParameterException("No client with number " + clientNumber);
+            throw new IllegalArgumentException("No client with number " + clientNumber);
         }
     }
 

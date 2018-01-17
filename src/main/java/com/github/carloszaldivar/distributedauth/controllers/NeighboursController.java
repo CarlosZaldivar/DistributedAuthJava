@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.security.InvalidParameterException;
 import java.util.List;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
@@ -38,12 +37,12 @@ public class NeighboursController {
 
     private void validateNeighbour(Neighbour neighbour) {
         if (Neighbours.getSyncTimes().containsKey(neighbour.getId())) {
-            throw new InvalidParameterException("Neighbour already exists");
+            throw new IllegalArgumentException("Neighbour already exists");
         }
     }
 
-    @ExceptionHandler(InvalidParameterException.class)
-    private ResponseEntity<String> handleException(InvalidParameterException exception) {
+    @ExceptionHandler(IllegalArgumentException.class)
+    private ResponseEntity<String> handleException(IllegalArgumentException exception) {
         return new ResponseEntity<>(exception.getMessage(), HttpStatus.BAD_REQUEST);
     }
 }
