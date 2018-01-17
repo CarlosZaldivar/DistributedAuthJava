@@ -61,6 +61,21 @@ public class ClientsController {
         return new ResponseEntity(HttpStatus.NO_CONTENT);
     }
 
+    @RequestMapping(method=POST, value={"/clients/{id}/authenticate"})
+    public ResponseEntity authenticate(@PathVariable(value="id") String clientNumber, @RequestBody String pin) {
+        if (clientNumber == null || pin == null) {
+            throw new InvalidParameterException("Client number and PIN should be provided.");
+        }
+
+        HttpStatus httpStatus;
+        if (!Clients.get().containsKey(clientNumber)) {
+            httpStatus = HttpStatus.NOT_FOUND;
+        } else {
+            httpStatus = Clients.get().get(clientNumber).getPin().equals(pin) ? HttpStatus.OK : HttpStatus.UNAUTHORIZED;
+        }
+        return new ResponseEntity(httpStatus);
+    }
+
     @ExceptionHandler({InvalidParameterException.class, IllegalStateException.class})
     private ResponseEntity<String> handleException(InvalidParameterException exception) {
         return new ResponseEntity<>(exception.getMessage(), HttpStatus.BAD_REQUEST);
