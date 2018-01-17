@@ -190,10 +190,19 @@ public class FatRequestController {
     private void apply(List<Operation> operations) {
         for (Operation operation : operations) {
             switch (operation.getType()) {
-                case ADDING_CLIENT:
+                case ADDING_CLIENT: {
                     Map<String, Object> data = operation.getData();
                     Client client = new Client((String) data.get("number"), (String) data.get("pin"));
                     Clients.get().put(client.getNumber(), client);
+                    break;
+                }
+                case REMOVING_CLIENT: {
+                    Map<String, Object> data = operation.getData();
+                    Clients.get().remove(data.get("number"));
+                    break;
+                }
+                default:
+                    throw new RuntimeException("Operation type not supported.");
             }
         }
     }
@@ -204,6 +213,10 @@ public class FatRequestController {
                 case ADDING_CLIENT:
                     String clientNumber = (String) operation.getData().get("number");
                     Clients.get().remove(clientNumber);
+                case REMOVING_CLIENT:
+                    break;
+                default:
+                    throw new RuntimeException("Operation type not supported.");
             }
         }
     }

@@ -7,10 +7,7 @@ import com.github.carloszaldivar.distributedauth.data.Clients;
 import com.github.carloszaldivar.distributedauth.data.Operations;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
@@ -18,6 +15,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.springframework.web.bind.annotation.RequestMethod.DELETE;
 import static org.springframework.web.bind.annotation.RequestMethod.POST;
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 
@@ -51,6 +49,22 @@ public class ClientsController {
         }
     }
 
+    @RequestMapping(method=DELETE, value={"/clients/{id}"})
+    public Map<String, String> delete(@PathVariable(value="id") String clientNumber) {
+        checkServerState();
+        validateClientNumber(clientNumber);
+        Client client = Clients.get().get(clientNumber);
+        Operation deletingClientOperation = createClientDeletingOperation(System.currentTimeMillis(), client);
+        Clients.get().remove(clientNumber);
+        Operations.get().add(deletingClientOperation);
+        logger.info("Removed client " + client.getNumber());
+        (new FatRequestsSender()).sendFatRequests();
+        DistributedAuthApplication.setState(DistributedAuthApplication.State.UNSYNCHRONIZED);
+        Map<String, String> response = new HashMap<>();
+        response.put("status", "ok");
+        return response;
+    }
+
     private void validateClient(Client client)
     {
         String number = client.getNumber();
@@ -66,6 +80,13 @@ public class ClientsController {
 
         if (Clients.get().containsKey(number)) {
             throw new InvalidParameterException("Client with this number already exists.");
+        }
+    }
+
+
+    private void validateClientNumber(String clientNumber) {
+        if (!Clients.get().containsKey(clientNumber)) {
+            throw new InvalidParameterException("No client with number " + clientNumber);
         }
     }
 
@@ -91,5 +112,22 @@ public class ClientsController {
         operationData.put("pin", client.getPin());
 
         return new Operation(unixTimestamp, Operation.Type.ADDING_CLIENT, number, operationData, lastOperation);
+    }
+
+    private Operation createClientDeletingOperation(long unixTimestamp, Client client) {
+        List<Operation> operations = Operations.get();
+        Operation lastOperation = null;
+        int number = 0;
+
+        if (!operations.isEmpty()) {
+            lastOperation = Operations.get().get(Operations.get().size() - 1);
+            number = lastOperation.getNumber();
+        }
+
+        Map<String, Object> operationData = new HashMap<>();
+        operationData.put("number", client.getNumber());
+        operationData.put("pin", client.getPin());
+        return new Operation(unixTimestamp, Operation.Type.REMOVING_CLIENT, number, operationData, lastOperation);
+
     }
 }

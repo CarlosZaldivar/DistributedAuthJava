@@ -29,6 +29,21 @@ public class ClientsControllerTests {
         Assert.assertEquals(Operation.Type.ADDING_CLIENT, Operations.get().get(0).getType());
     }
 
+    @Test
+    public void deletingClientTest() {
+        Assert.assertEquals(0, Clients.get().size());
+        Assert.assertEquals(0, Operations.get().size());
+        ClientsController controller = new ClientsController();
+        Client client = new Client();
+        client.setNumber("123456");
+        client.setPin("1234");
+
+        controller.create(client);
+        controller.delete(client.getNumber());
+
+        Assert.assertEquals(0, Clients.get().size());
+    }
+
     @After
     public void cleanSingletons() {
         Clients.get().clear();

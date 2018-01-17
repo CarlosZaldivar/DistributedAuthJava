@@ -77,7 +77,7 @@ public class Operation {
         return calculatedNextOperation.getHash().equals(nextOperation.getHash());
     }
 
-    public enum Type { ADDING_CLIENT }
+    public enum Type { ADDING_CLIENT, REMOVING_CLIENT }
 
     private String calculateHash(Operation previousOperation) {
         ObjectMapper mapper = new ObjectMapper();
