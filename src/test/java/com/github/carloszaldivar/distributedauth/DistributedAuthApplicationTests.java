@@ -21,34 +21,42 @@ import java.util.concurrent.TimeUnit;
 @RunWith(SpringRunner.class)
 @SpringBootTest
 public class DistributedAuthApplicationTests {
-    private Client client1 = new Client("123456", "1234");
-    private Client client2 = new Client("123457", "1235");
-    private Client client3 = new Client("123458", "1234");
+    private Client client1;
+    private Client client2;
+    private Client client3;
     private Neighbour neighbour = new Neighbour("Server1", "localhost:10000");
 
     private Operation createFirstOperation(long timestamp) {
         Map<String, Object> firstClientData = new HashMap<>();
         firstClientData.put("number", client1.getNumber());
         firstClientData.put("pin", client1.getPin());
+        firstClientData.put("activatedList", client1.getActivatedList().getPasswords());
+        firstClientData.put("nonactivatedList", client1.getNonactivatedList().getPasswords());
         return new Operation(timestamp, Operation.Type.ADDING_CLIENT, 0, firstClientData, null);
     }
 
-    private Operation createSecondOperation(long timestamp, Operation firstOperation) {
+    private Operation createSecondOperation(long timestamp, Operation firstOperation, Client client) {
         Map<String, Object> secondClientData = new HashMap<>();
-        secondClientData.put("number", client2.getNumber());
-        secondClientData.put("pin", client2.getPin());
+        secondClientData.put("number", client.getNumber());
+        secondClientData.put("pin", client.getPin());
+        secondClientData.put("activatedList", client.getActivatedList().getPasswords());
+        secondClientData.put("nonactivatedList", client.getNonactivatedList().getPasswords());
         return new Operation(timestamp, Operation.Type.ADDING_CLIENT, 1, secondClientData, firstOperation);
     }
 
-    private Operation createThirdOperation(long timestamp, Operation firstOperation) {
-        Map<String, Object> thirdClientData = new HashMap<>();
-        thirdClientData.put("number", client3.getNumber());
-        thirdClientData.put("pin", client3.getPin());
-        // Adding third client conflicts with adding second client.
-        return new Operation(timestamp, Operation.Type.ADDING_CLIENT, 1, thirdClientData, firstOperation);
-    }
-
     public DistributedAuthApplicationTests() {
+        String password = "password12";
+        List<String> activePasswords = new ArrayList<>();
+        List<String> inactivePasswords = new ArrayList<>();
+
+        for (int i = 0; i < OneTimePasswordList.PASSWORDS_PER_LIST; ++i) {
+            activePasswords.add(password);
+            inactivePasswords.add(password);
+        }
+        client1 = new Client("123456", "1234", new OneTimePasswordList(activePasswords), new OneTimePasswordList(inactivePasswords));
+        client2 = new Client("123457", "1235", new OneTimePasswordList(activePasswords), new OneTimePasswordList(inactivePasswords));
+        client3 = new Client("123458", "1234", new OneTimePasswordList(activePasswords), new OneTimePasswordList(inactivePasswords));
+
         DistributedAuthApplication.setHistoryCleaning(false);
     }
 
@@ -95,7 +103,7 @@ public class DistributedAuthApplicationTests {
         clientsController.create(client1);
 
         Operation firstOperation = Operations.get().get(0);
-        List<Operation> history = Arrays.asList(firstOperation, createSecondOperation(firstOperation.getTimestamp() + 100, firstOperation));
+        List<Operation> history = Arrays.asList(firstOperation, createSecondOperation(firstOperation.getTimestamp() + 100, firstOperation, client2));
         FatRequest request = new FatRequest(neighbour.getId(), history, new HashMap<>());
         Assert.assertTrue(request.getHistory().get(0).isBefore(request.getHistory().get(1)));
 
@@ -139,7 +147,7 @@ public class DistributedAuthApplicationTests {
         clientsController.create(client3);
 
         Operation firstOperation = Operations.get().get(0);
-        Operation secondOperation = createSecondOperation(firstOperation.getTimestamp() + 1, firstOperation);
+        Operation secondOperation = createSecondOperation(firstOperation.getTimestamp() + 1, firstOperation, client2);
         FatRequest request = new FatRequest(neighbour.getId(), Arrays.asList(firstOperation, secondOperation), new HashMap<>());
 
         FatRequestController fatRequestController = new FatRequestController();
@@ -160,7 +168,7 @@ public class DistributedAuthApplicationTests {
         clientsController.create(client2);
 
         Operation firstOperation = Operations.get().get(0);
-        Operation thirdOperation = createThirdOperation(Operations.get().get(1).getTimestamp() + 100, firstOperation);
+        Operation thirdOperation = createSecondOperation(Operations.get().get(1).getTimestamp() + 100, firstOperation, client3);
         FatRequest request = new FatRequest(neighbour.getId(), Arrays.asList(firstOperation, thirdOperation), new HashMap<>());
 
         FatRequestController fatRequestController = new FatRequestController();
@@ -174,7 +182,7 @@ public class DistributedAuthApplicationTests {
         NeighboursController neighboursController = new NeighboursController();
         neighboursController.addNeighbour(neighbour);
 
-        String hash = "9548d50bf82d7d29a220fe5923798bd494f2ff9f60e735825f6d09ccc317d995";
+        String hash = "121fe00c89a1526306090e00542badce64b0f5d2d6e6c4c4eab5fae91b336577";
         ThinRequest request = new ThinRequest(neighbour.getId(), hash, new HashMap<>());
 
         Operation operation = createFirstOperation(100);

@@ -5,6 +5,8 @@ import com.github.carloszaldivar.distributedauth.synchronization.FatRequestsSend
 import com.github.carloszaldivar.distributedauth.models.*;
 import com.github.carloszaldivar.distributedauth.data.Clients;
 import com.github.carloszaldivar.distributedauth.data.Operations;
+import org.apache.commons.text.CharacterPredicates;
+import org.apache.commons.text.RandomStringGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
@@ -27,6 +29,7 @@ public class ClientsController {
     public Client create(@RequestBody Client client) {
         checkServerState();
         validateClient(client);
+        addPasswordLists(client);
         Clients.get().put(client.getNumber(), client);
         Operation addingClientOperation = createClientAddingOperation(System.currentTimeMillis(), client);
         Operations.get().add(addingClientOperation);
@@ -90,6 +93,23 @@ public class ClientsController {
         }
     }
 
+    private void addPasswordLists(Client client) {
+        RandomStringGenerator randomStringGenerator =
+                new RandomStringGenerator.Builder()
+                        .withinRange('0', 'z')
+                        .filteredBy(CharacterPredicates.LETTERS, CharacterPredicates.DIGITS)
+                        .build();
+        List<String> activePasswords = new ArrayList<>();
+        List<String> inactivePasswords = new ArrayList<>();
+        for (int i = 0; i < OneTimePasswordList.PASSWORDS_PER_LIST; ++i) {
+            activePasswords.add(randomStringGenerator.generate(OneTimePasswordList.PASSWORDS_LENGTH));
+            inactivePasswords.add(randomStringGenerator.generate(OneTimePasswordList.PASSWORDS_LENGTH));
+        }
+
+        client.setActivatedList(new OneTimePasswordList(activePasswords));
+        client.setNonactivatedList(new OneTimePasswordList((inactivePasswords)));
+    }
+
     @ExceptionHandler({InvalidParameterException.class, IllegalStateException.class})
     private Map<String, String> handleException(InvalidParameterException exception) {
         Map<String, String> error = new HashMap<>();
@@ -107,10 +127,7 @@ public class ClientsController {
             number = lastOperation.getNumber();
         }
 
-        Map<String, Object> operationData = new HashMap<>();
-        operationData.put("number", client.getNumber());
-        operationData.put("pin", client.getPin());
-
+        Map<String, Object> operationData = clientData(client);
         return new Operation(unixTimestamp, Operation.Type.ADDING_CLIENT, number, operationData, lastOperation);
     }
 
@@ -124,10 +141,17 @@ public class ClientsController {
             number = lastOperation.getNumber();
         }
 
-        Map<String, Object> operationData = new HashMap<>();
-        operationData.put("number", client.getNumber());
-        operationData.put("pin", client.getPin());
+        Map<String, Object> operationData = clientData(client);
         return new Operation(unixTimestamp, Operation.Type.REMOVING_CLIENT, number, operationData, lastOperation);
 
+    }
+
+    private Map<String, Object> clientData(Client client) {
+        Map<String, Object> clientData = new HashMap<>();
+        clientData.put("number", client.getNumber());
+        clientData.put("pin", client.getPin());
+        clientData.put("activatedList", client.getActivatedList().getPasswords());
+        clientData.put("nonactivatedList", client.getNonactivatedList().getPasswords());
+        return clientData;
     }
 }

@@ -17,9 +17,7 @@ public class ClientsControllerTests {
         Assert.assertEquals(0, Clients.get().size());
         Assert.assertEquals(0, Operations.get().size());
         ClientsController controller = new ClientsController();
-        Client client = new Client();
-        client.setNumber("123456");
-        client.setPin("1234");
+        Client client = new Client("123456", "1234", null, null);
 
         controller.create(client);
 
@@ -34,9 +32,7 @@ public class ClientsControllerTests {
         Assert.assertEquals(0, Clients.get().size());
         Assert.assertEquals(0, Operations.get().size());
         ClientsController controller = new ClientsController();
-        Client client = new Client();
-        client.setNumber("123456");
-        client.setPin("1234");
+        Client client = new Client("123456", "1234", null, null);
 
         controller.create(client);
         controller.delete(client.getNumber());
@@ -45,10 +41,11 @@ public class ClientsControllerTests {
     }
 
     @After
-    public void cleanSingletons() {
+    public void cleanGlobalData() {
         Clients.get().clear();
         Neighbours.get().clear();
         Neighbours.getSyncTimes().clear();
         Operations.get().clear();
+        DistributedAuthApplication.setState(DistributedAuthApplication.State.SYNCHRONIZED);
     }
 }

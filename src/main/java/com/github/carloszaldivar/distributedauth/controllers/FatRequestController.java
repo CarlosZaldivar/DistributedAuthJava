@@ -192,7 +192,9 @@ public class FatRequestController {
             switch (operation.getType()) {
                 case ADDING_CLIENT: {
                     Map<String, Object> data = operation.getData();
-                    Client client = new Client((String) data.get("number"), (String) data.get("pin"));
+                    Client client = new Client((String) data.get("number"), (String) data.get("pin"),
+                            new OneTimePasswordList((List<String>) data.get("activatedList")),
+                            new OneTimePasswordList((List<String>) data.get("nonactivatedList")));
                     Clients.get().put(client.getNumber(), client);
                     break;
                 }
