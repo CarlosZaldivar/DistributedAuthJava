@@ -3,6 +3,7 @@ package com.github.carloszaldivar.distributedauth.models;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class OneTimePasswordList {
@@ -27,6 +28,11 @@ public class OneTimePasswordList {
     public OneTimePasswordList(@JsonProperty("passwords") List<String> passwords, @JsonProperty("currentIndex") int currentIndex) {
         this(passwords);
         this.currentIndex = currentIndex;
+    }
+
+    public OneTimePasswordList(OneTimePasswordList otherPasswordList) {
+        this.passwords = new ArrayList<>(otherPasswordList.passwords);
+        this.currentIndex = otherPasswordList.currentIndex;
     }
 
     public List<String> getPasswords() {

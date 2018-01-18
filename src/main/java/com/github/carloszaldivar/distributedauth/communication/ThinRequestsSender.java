@@ -1,4 +1,4 @@
-package com.github.carloszaldivar.distributedauth.synchronization;
+package com.github.carloszaldivar.distributedauth.communication;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -25,7 +25,7 @@ import java.util.Map;
 
 @Component
 public class ThinRequestsSender {
-    private Logger logger = LoggerFactory.getLogger("com.github.carloszaldivar.distributedauth.synchronization.ThinRequestsSender");
+    private Logger logger = LoggerFactory.getLogger("com.github.carloszaldivar.distributedauth.communication.ThinRequestsSender");
 
     @Scheduled(fixedRate = 1000)
     public void sendThinRequests() {
@@ -46,7 +46,7 @@ public class ThinRequestsSender {
 
         Operation lastOperation = Operations.get().get(Operations.get().size() - 1);
         Map<String, Long> syncTimes = Neighbours.getSyncTimes();
-        for (Neighbour neighbour : Neighbours.get()) {
+        for (Neighbour neighbour : Neighbours.get().values()) {
             if (syncTimes.get(neighbour.getId()) < lastOperation.getTimestamp()) {
                 sendThinRequest(neighbour, syncTimes, lastOperation);
                 logger.info("Thin request sent to " + neighbour.getId());

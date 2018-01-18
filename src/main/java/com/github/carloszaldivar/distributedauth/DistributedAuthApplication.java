@@ -68,7 +68,7 @@ public class DistributedAuthApplication {
         }
 
         long lastTimestamp = operations.get(operations.size() - 1).getTimestamp();
-        for (Neighbour neighbour : Neighbours.get()) {
+        for (Neighbour neighbour : Neighbours.get().values()) {
             if (Neighbours.getSyncTimes().get(neighbour.getId()) != lastTimestamp) {
                 return false;
             }

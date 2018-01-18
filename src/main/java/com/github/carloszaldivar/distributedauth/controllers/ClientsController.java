@@ -1,7 +1,9 @@
 package com.github.carloszaldivar.distributedauth.controllers;
 
 import com.github.carloszaldivar.distributedauth.DistributedAuthApplication;
-import com.github.carloszaldivar.distributedauth.synchronization.FatRequestsSender;
+import com.github.carloszaldivar.distributedauth.communication.AuthRequestsSender;
+import com.github.carloszaldivar.distributedauth.data.Neighbours;
+import com.github.carloszaldivar.distributedauth.communication.FatRequestsSender;
 import com.github.carloszaldivar.distributedauth.models.*;
 import com.github.carloszaldivar.distributedauth.data.Clients;
 import com.github.carloszaldivar.distributedauth.data.Operations;
@@ -11,10 +13,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.springframework.web.bind.annotation.RequestMethod.DELETE;
 import static org.springframework.web.bind.annotation.RequestMethod.POST;
@@ -60,36 +60,30 @@ public class ClientsController {
 
     @RequestMapping(method=POST, value={"/clients/{id}/authenticate"})
     public ResponseEntity authenticate(@PathVariable(value="id") String clientNumber, @RequestBody String pin) {
-        if (clientNumber == null || pin == null) {
-            throw new IllegalArgumentException("Client number and PIN should be provided.");
-        }
-
-        HttpStatus httpStatus;
-        if (!Clients.get().containsKey(clientNumber)) {
-            httpStatus = HttpStatus.NOT_FOUND;
-        } else {
-            httpStatus = Clients.get().get(clientNumber).getPin().equals(pin) ? HttpStatus.OK : HttpStatus.UNAUTHORIZED;
-        }
-        return new ResponseEntity(httpStatus);
+        validateClientNumber(clientNumber);
+        HttpStatus status = tryToAuthenticate(clientNumber, pin) ? HttpStatus.OK : HttpStatus.UNAUTHORIZED;
+        logger.info(String.format("Client %s authentication attempt. Result - %s", clientNumber, status));
+        return new ResponseEntity(status);
     }
 
     @RequestMapping(method=POST, value={"/clients/{id}/authorize"})
     public ResponseEntity authorizeOperation(@PathVariable(value="id") String clientNumber, @RequestBody AuthorizationRequest request)
     {
         validateClientNumber(clientNumber);
-        validateAuthorizationData(Clients.get().get(clientNumber), request);
+        validateAuthorizationData(request);
         Client client = Clients.get().get(clientNumber);
-        HttpStatus status = request.getPin().equals(client.getPin()) && client.useOneTimePassword(request.getOneTimePassword()) ?
-                HttpStatus.OK : HttpStatus.UNAUTHORIZED;
+        HttpStatus status = tryToAuthorizeOperation(client, request) ? HttpStatus.OK : HttpStatus.UNAUTHORIZED;
+        logger.info(String.format("Client's %s operation authorization attempt. Result - %s", clientNumber, status));
         return new ResponseEntity(status);
     }
 
     @RequestMapping(method=POST, value={"/clients/{id}/activatelist"})
     public ResponseEntity activateNewPasswordList(@PathVariable(value="id") String clientNumber, @RequestBody AuthorizationRequest request) {
         validateClientNumber(clientNumber);
+        validateAuthorizationData(request);
         Client client = Clients.get().get(clientNumber);
-        HttpStatus status = request.getPin().equals(client.getPin()) && client.activateNewOneTimePasswordList(request.getOneTimePassword()) ?
-                HttpStatus.OK : HttpStatus.UNAUTHORIZED;
+        HttpStatus status = tryToActivateNewPasswordList(client, request) ? HttpStatus.OK : HttpStatus.UNAUTHORIZED;
+        logger.info(String.format("Client's %s new password list activation attempt. Result - %s", clientNumber, status));
         return new ResponseEntity(status);
     }
 
@@ -144,7 +138,7 @@ public class ClientsController {
         }
     }
 
-    private void validateAuthorizationData(Client client, AuthorizationRequest request) {
+    private void validateAuthorizationData(AuthorizationRequest request) {
         if (request.getPin() == null || request.getOneTimePassword() == null) {
             throw new IllegalArgumentException("PIN and password should be provided.");
         }
@@ -186,5 +180,38 @@ public class ClientsController {
         clientData.put("activatedList", client.getActivatedList().getPasswords());
         clientData.put("nonactivatedList", client.getNonactivatedList().getPasswords());
         return clientData;
+    }
+
+    private boolean tryToAuthenticate(String clientNumber, String pin) {
+        List<Neighbour> specialNeighbours = Neighbours.get().values().stream().filter(Neighbour::isSpecial).collect(Collectors.toList());
+        AuthRequestsSender requestsSender = new AuthRequestsSender();
+        for (Neighbour specialNeighbour : specialNeighbours) {
+            if (!requestsSender.neighbourAgreesToAuthenticate(specialNeighbour, clientNumber, pin)) {
+                return false;
+            }
+        }
+        return Clients.get().get(clientNumber).getPin().equals(pin);
+    }
+
+    private boolean tryToAuthorizeOperation(Client client, AuthorizationRequest request) {
+        List<Neighbour> specialNeighbours = Neighbours.get().values().stream().filter(Neighbour::isSpecial).collect(Collectors.toList());
+        AuthRequestsSender requestsSender = new AuthRequestsSender();
+        for (Neighbour specialNeighbour : specialNeighbours) {
+            if (!requestsSender.neighbourAgreesToAuthorizeOperation(specialNeighbour, client.getNumber(), request)) {
+                return false;
+            }
+        }
+        return request.getPin().equals(client.getPin()) && client.useOneTimePassword(request.getOneTimePassword());
+    }
+
+    private boolean tryToActivateNewPasswordList(Client client, AuthorizationRequest request) {
+        List<Neighbour> specialNeighbours = Neighbours.get().values().stream().filter(Neighbour::isSpecial).collect(Collectors.toList());
+        AuthRequestsSender requestsSender = new AuthRequestsSender();
+        for (Neighbour specialNeighbour : specialNeighbours) {
+            if (!requestsSender.neighbourAgreesToActivateNewPasswordList(specialNeighbour, client.getNumber(), request)) {
+                return false;
+            }
+        }
+        return request.getPin().equals(client.getPin()) && client.activateNewOneTimePasswordList(request.getOneTimePassword());
     }
 }

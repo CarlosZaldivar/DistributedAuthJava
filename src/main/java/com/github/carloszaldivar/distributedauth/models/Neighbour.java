@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public class Neighbour {
     final private String id;
     final private String url;
+    private boolean isSpecial;
 
     @JsonCreator
     public Neighbour(@JsonProperty("id") String id, @JsonProperty("url") String url) {
@@ -19,5 +20,13 @@ public class Neighbour {
 
     public String getUrl() {
         return url;
+    }
+
+    public boolean isSpecial() {
+        return isSpecial;
+    }
+
+    public void setSpecial(boolean special) {
+        isSpecial = special;
     }
 }

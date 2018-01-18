@@ -1,4 +1,4 @@
-package com.github.carloszaldivar.distributedauth.synchronization;
+package com.github.carloszaldivar.distributedauth.communication;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -27,10 +27,10 @@ import java.util.List;
 import java.util.Map;
 
 public class FatRequestsSender {
-    private Logger logger = LoggerFactory.getLogger("com.github.carloszaldivar.distributedauth.synchronization.FatRequestsSender");
+    private Logger logger = LoggerFactory.getLogger("com.github.carloszaldivar.distributedauth.communication.FatRequestsSender");
 
     public void sendFatRequests() {
-        for (Neighbour neighbour : Neighbours.get()) {
+        for (Neighbour neighbour : Neighbours.get().values()) {
             sendFatRequest(neighbour);
         }
     }

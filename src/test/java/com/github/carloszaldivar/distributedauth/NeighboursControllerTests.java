@@ -19,7 +19,7 @@ public class NeighboursControllerTests {
         controller.addNeighbour(neighbour);
 
         Assert.assertEquals(1, Neighbours.get().size());
-        Assert.assertEquals(neighbour, Neighbours.get().get(0));
+        Assert.assertEquals(neighbour, Neighbours.get().get(neighbour.getId()));
     }
 
     @After

@@ -24,6 +24,13 @@ public class Client {
         this.nonactivatedList = nonactivatedList;
     }
 
+    public Client(Client otherClient) {
+        this.number = otherClient.number;
+        this.pin = otherClient.pin;
+        this.activatedList = new OneTimePasswordList(otherClient.getActivatedList());
+        this.nonactivatedList = new OneTimePasswordList(otherClient.getNonactivatedList());
+    }
+
     public String getNumber() {
         return number;
     }

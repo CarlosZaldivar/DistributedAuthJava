@@ -6,7 +6,7 @@ import java.util.*;
 
 public class Neighbours {
     private static Map<String, Long> syncTimes = new HashMap<>();
-    private static List<Neighbour> neighbours = new ArrayList<>();
+    private static Map<String, Neighbour> neighbours = new HashMap<>();
 
     private Neighbours() {}
 
@@ -14,7 +14,7 @@ public class Neighbours {
         return syncTimes;
     }
 
-    public static List<Neighbour> get() {
+    public static Map<String, Neighbour> get() {
         return neighbours;
     }
 }
