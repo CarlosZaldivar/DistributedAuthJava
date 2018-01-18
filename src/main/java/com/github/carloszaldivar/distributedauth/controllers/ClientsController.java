@@ -154,8 +154,7 @@ public class ClientsController {
             number = lastOperation.getNumber();
         }
 
-        Map<String, Object> operationData = clientData(client);
-        return new Operation(unixTimestamp, Operation.Type.ADDING_CLIENT, number, operationData, lastOperation);
+        return new Operation(unixTimestamp, Operation.Type.ADDING_CLIENT, number, null, client, lastOperation);
     }
 
     private Operation createClientDeletingOperation(long unixTimestamp, Client client) {
@@ -168,18 +167,7 @@ public class ClientsController {
             number = lastOperation.getNumber();
         }
 
-        Map<String, Object> operationData = clientData(client);
-        return new Operation(unixTimestamp, Operation.Type.REMOVING_CLIENT, number, operationData, lastOperation);
-
-    }
-
-    private Map<String, Object> clientData(Client client) {
-        Map<String, Object> clientData = new HashMap<>();
-        clientData.put("number", client.getNumber());
-        clientData.put("pin", client.getPin());
-        clientData.put("activatedList", client.getActivatedList().getPasswords());
-        clientData.put("nonactivatedList", client.getNonactivatedList().getPasswords());
-        return clientData;
+        return new Operation(unixTimestamp, Operation.Type.REMOVING_CLIENT, number, client, null, lastOperation);
     }
 
     private boolean tryToAuthenticate(String clientNumber, String pin) {

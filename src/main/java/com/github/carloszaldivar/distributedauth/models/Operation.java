@@ -12,7 +12,6 @@ import org.apache.commons.codec.binary.Hex;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.Map;
 
 @JsonPropertyOrder({ "data", "hash", "number", "timestamp", "type" })
 public class Operation {
@@ -21,19 +20,21 @@ public class Operation {
     final private Type type;
     final private int number;
 
-    // JSON-like dictionary
-    final private Map<String, Object> data;
+    final private Client clientBefore;
+    final private Client clientAfter;
 
     @JsonCreator
     public Operation(@JsonProperty("timestamp") long timestamp,
                      @JsonProperty("type") Type type,
                      @JsonProperty("number") int number,
-                     @JsonProperty("data") Map<String, Object> data,
+                     @JsonProperty("clientBefore") Client clientBefore,
+                     @JsonProperty("clientAfter") Client clientAfter,
                      @JsonProperty("previousOperation") Operation previousOperation) {
         this.timestamp = timestamp;
         this.type = type;
         this.number = number;
-        this.data = data;
+        this.clientBefore = clientBefore;
+        this.clientAfter = clientAfter;
         this.hash = calculateHash(previousOperation);
     }
 
@@ -53,8 +54,12 @@ public class Operation {
         return number;
     }
 
-    public Map<String, Object> getData() {
-        return data;
+    public Client getClientBefore() {
+        return clientBefore;
+    }
+
+    public Client getClientAfter() {
+        return clientAfter;
     }
 
     public boolean isAfter(Operation previousOperation) {
@@ -62,7 +67,8 @@ public class Operation {
                 this.getTimestamp(),
                 this.getType(),
                 this.getNumber(),
-                this.getData(),
+                this.getClientBefore(),
+                this.getClientAfter(),
                 previousOperation);
         return calculatedCurrentOperation.getHash().equals(this.getHash());
     }
@@ -72,7 +78,8 @@ public class Operation {
                 nextOperation.getTimestamp(),
                 nextOperation.getType(),
                 nextOperation.getNumber(),
-                nextOperation.getData(),
+                nextOperation.clientBefore,
+                nextOperation.clientAfter,
                 this);
         return calculatedNextOperation.getHash().equals(nextOperation.getHash());
     }

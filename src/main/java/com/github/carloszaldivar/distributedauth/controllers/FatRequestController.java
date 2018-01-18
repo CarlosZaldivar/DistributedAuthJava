@@ -190,16 +190,13 @@ public class FatRequestController {
         for (Operation operation : operations) {
             switch (operation.getType()) {
                 case ADDING_CLIENT: {
-                    Map<String, Object> data = operation.getData();
-                    Client client = new Client((String) data.get("number"), (String) data.get("pin"),
-                            new OneTimePasswordList((List<String>) data.get("activatedList")),
-                            new OneTimePasswordList((List<String>) data.get("nonactivatedList")));
-                    Clients.get().put(client.getNumber(), client);
+                    Client newClient = operation.getClientAfter();
+                    Clients.get().put(newClient.getNumber(), newClient);
                     break;
                 }
                 case REMOVING_CLIENT: {
-                    Map<String, Object> data = operation.getData();
-                    Clients.get().remove(data.get("number"));
+                    Client clientToRemove = operation.getClientBefore();
+                    Clients.get().remove(clientToRemove.getNumber());
                     break;
                 }
                 default:
@@ -211,11 +208,16 @@ public class FatRequestController {
     private void unapply(List<Operation> operations) {
         for (Operation operation : operations) {
             switch (operation.getType()) {
-                case ADDING_CLIENT:
-                    String clientNumber = (String) operation.getData().get("number");
+                case ADDING_CLIENT: {
+                    String clientNumber = operation.getClientAfter().getNumber();
                     Clients.get().remove(clientNumber);
-                case REMOVING_CLIENT:
                     break;
+                }
+                case REMOVING_CLIENT: {
+                    Client client = operation.getClientBefore();
+                    Clients.get().put(client.getNumber(), client);
+                    break;
+                }
                 default:
                     throw new RuntimeException("Operation type not supported.");
             }

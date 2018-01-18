@@ -27,21 +27,11 @@ public class DistributedAuthApplicationTests {
     private Neighbour neighbour = new Neighbour("Server1", "localhost:10000");
 
     private Operation createFirstOperation(long timestamp) {
-        Map<String, Object> firstClientData = new HashMap<>();
-        firstClientData.put("number", client1.getNumber());
-        firstClientData.put("pin", client1.getPin());
-        firstClientData.put("activatedList", client1.getActivatedList().getPasswords());
-        firstClientData.put("nonactivatedList", client1.getNonactivatedList().getPasswords());
-        return new Operation(timestamp, Operation.Type.ADDING_CLIENT, 0, firstClientData, null);
+        return new Operation(timestamp, Operation.Type.ADDING_CLIENT, 0, null, client1, null);
     }
 
     private Operation createSecondOperation(long timestamp, Operation firstOperation, Client client) {
-        Map<String, Object> secondClientData = new HashMap<>();
-        secondClientData.put("number", client.getNumber());
-        secondClientData.put("pin", client.getPin());
-        secondClientData.put("activatedList", client.getActivatedList().getPasswords());
-        secondClientData.put("nonactivatedList", client.getNonactivatedList().getPasswords());
-        return new Operation(timestamp, Operation.Type.ADDING_CLIENT, 1, secondClientData, firstOperation);
+        return new Operation(timestamp, Operation.Type.ADDING_CLIENT, 1, null, client2, firstOperation);
     }
 
     public DistributedAuthApplicationTests() {
@@ -182,7 +172,7 @@ public class DistributedAuthApplicationTests {
         NeighboursController neighboursController = new NeighboursController();
         neighboursController.addNeighbour(neighbour);
 
-        String hash = "121fe00c89a1526306090e00542badce64b0f5d2d6e6c4c4eab5fae91b336577";
+        String hash = "33222d7f92744e44576394923be7f3bb6d61df63f1686523e0863900b957efd9";
         ThinRequest request = new ThinRequest(neighbour.getId(), hash, new HashMap<>());
 
         Operation operation = createFirstOperation(100);

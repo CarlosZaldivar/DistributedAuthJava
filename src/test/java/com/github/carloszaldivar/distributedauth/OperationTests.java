@@ -1,32 +1,26 @@
 package com.github.carloszaldivar.distributedauth;
 
+import com.github.carloszaldivar.distributedauth.models.Client;
 import com.github.carloszaldivar.distributedauth.models.Operation;
 import org.junit.Assert;
 import org.junit.Test;
-
-import java.util.HashMap;
-import java.util.Map;
 
 public class OperationTests {
     private Operation firstOperation;
     private Operation secondOperation;
 
     public OperationTests() {
-        Map<String, Object> firstData = new HashMap<>();
-        firstData.put("number", "123456");
-        firstData.put("pin", "1234");
-        firstOperation = new Operation(100, Operation.Type.ADDING_CLIENT, 0, firstData, null);
+        Client client1 = new Client("123456", "1234", null, null);
+        firstOperation = new Operation(100, Operation.Type.ADDING_CLIENT, 0, null, client1, null);
 
-        Map<String, Object> secondData = new HashMap<>();
-        secondData.put("number", "123457");
-        secondData.put("pin", "1235");
-        secondOperation = new Operation(100, Operation.Type.ADDING_CLIENT, 1, secondData, firstOperation);
+        Client client2 = new Client("123457", "1234", null, null);
+        secondOperation = new Operation(100, Operation.Type.ADDING_CLIENT, 1, null, client2, firstOperation);
     }
 
     @Test
     public void calculateHashTest() {
-        Assert.assertEquals("9548d50bf82d7d29a220fe5923798bd494f2ff9f60e735825f6d09ccc317d995", firstOperation.getHash());
-        Assert.assertEquals("a44b99bb6206ea2e45fe442819e30e37f521d99a98ed9a8319a4246214627b2d", secondOperation.getHash());
+        Assert.assertEquals("2fe5bdddb61055232b39e799e544e2737e1f4d0490634a16e2005d27fd9accfb", firstOperation.getHash());
+        Assert.assertEquals("f25feb421634285a3d11e5993aa935e2412ec52718ac505453413c1f7efc38f4", secondOperation.getHash());
     }
 
     @Test
