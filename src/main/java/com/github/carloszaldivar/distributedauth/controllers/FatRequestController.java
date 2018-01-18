@@ -37,11 +37,11 @@ public class FatRequestController {
 
         FatRequestResponse response;
         if (localHistory.isEmpty()) {
-            response = handleEmptyLocalHistory();
+            response = handleEmptyLocalHistory(fatRequest.getTimestamp());
         } else if (sameHistory()) {
-            response = handleSameHistory();
+            response = handleSameHistory(fatRequest.getTimestamp());
         } else {
-            response = handleDifferentHistories();
+            response = handleDifferentHistories(fatRequest.getTimestamp());
         }
 
         DistributedAuthApplication.updateState();
@@ -54,22 +54,22 @@ public class FatRequestController {
         return new ResponseEntity<>(exception.getMessage(), HttpStatus.BAD_REQUEST);
     }
 
-    private FatRequestResponse handleDifferentHistories() {
+    private FatRequestResponse handleDifferentHistories(long requestTimestamp) {
         DivergencePoint divergencePoint = findDivergencePoint(localHistory, neighbourHistory);
 
         switch (divergencePoint.getType()) {
             case LOCAL_TOO_OLD:
                 logger.info("Local history was not up to date. Updating.");
-                return handleLocalTooOld(divergencePoint);
+                return handleLocalTooOld(divergencePoint, requestTimestamp);
             case NEIGHBOUR_TOO_OLD:
                 logger.info("Sender's history was not up to date. Informing him about it.");
-                return new FatRequestResponse(FatRequestResponse.Status.U2OLD, Neighbours.getSyncTimes());
+                return new FatRequestResponse(FatRequestResponse.Status.U2OLD, Neighbours.getSyncTimes(), requestTimestamp);
             case LOCAL_NOT_CORRECT:
                 logger.info("Local history was incorrect. Fixing it.");
-                return handleLocalNotCorrect(divergencePoint);
+                return handleLocalNotCorrect(divergencePoint, requestTimestamp);
             case NEIGHBOUR_NOT_CORRECT:
                 logger.info("Sender's history was incorrect. Informing him about it.");
-                return new FatRequestResponse(FatRequestResponse.Status.CONFLICT, Neighbours.getSyncTimes());
+                return new FatRequestResponse(FatRequestResponse.Status.CONFLICT, Neighbours.getSyncTimes(), requestTimestamp);
             default:
                 throw new RuntimeException("Unexpected divergence point.");
         }
@@ -121,16 +121,16 @@ public class FatRequestController {
         }
     }
 
-    private FatRequestResponse handleLocalTooOld(DivergencePoint divergencePoint) {
+    private FatRequestResponse handleLocalTooOld(DivergencePoint divergencePoint, long requestTimesamp) {
         List<Operation> historyDifference = neighbourHistory.subList(divergencePoint.getNeighbourHistoryIndex(), neighbourHistory.size());
         localHistory.addAll(historyDifference);
         apply(historyDifference);
         updateSyncTimes(fatRequest.getSyncTimes());
         DistributedAuthApplication.setState(DistributedAuthApplication.State.UNSYNCHRONIZED);
-        return new FatRequestResponse(FatRequestResponse.Status.OK, Neighbours.getSyncTimes());
+        return new FatRequestResponse(FatRequestResponse.Status.OK, Neighbours.getSyncTimes(), requestTimesamp);
     }
 
-    private FatRequestResponse handleLocalNotCorrect(DivergencePoint divergencePoint) {
+    private FatRequestResponse handleLocalNotCorrect(DivergencePoint divergencePoint, long requestTimestamp) {
         int localHistoryIndex = divergencePoint.getLocalHistoryIndex();
         List<Operation> historyToRemove = localHistory.subList(localHistoryIndex, localHistory.size());
         unapply(historyToRemove);
@@ -144,12 +144,13 @@ public class FatRequestController {
 
         updateSyncTimes(fatRequest.getSyncTimes());
         DistributedAuthApplication.setState(DistributedAuthApplication.State.UNSYNCHRONIZED);
-        return new FatRequestResponse(FatRequestResponse.Status.OK, Neighbours.getSyncTimes());
+        DistributedAuthApplication.setLastConflictResolution(requestTimestamp);
+        return new FatRequestResponse(FatRequestResponse.Status.OK, Neighbours.getSyncTimes(), requestTimestamp);
     }
 
-    private FatRequestResponse handleSameHistory() {
+    private FatRequestResponse handleSameHistory(long requestTimestamp) {
         updateSyncTimes(fatRequest.getSyncTimes());
-        return new FatRequestResponse(FatRequestResponse.Status.OK, Neighbours.getSyncTimes());
+        return new FatRequestResponse(FatRequestResponse.Status.OK, Neighbours.getSyncTimes(), requestTimestamp);
     }
 
     private boolean sameHistory() {
@@ -158,11 +159,11 @@ public class FatRequestController {
         return localLastOperation.getHash().equals(neighboursLastOperation.getHash());
     }
 
-    private FatRequestResponse handleEmptyLocalHistory() {
+    private FatRequestResponse handleEmptyLocalHistory(long requestTimestamp) {
         localHistory.addAll(neighbourHistory);
         apply(neighbourHistory);
         updateSyncTimes(fatRequest.getSyncTimes());
-        return new FatRequestResponse(FatRequestResponse.Status.OK, Neighbours.getSyncTimes());
+        return new FatRequestResponse(FatRequestResponse.Status.OK, Neighbours.getSyncTimes(), requestTimestamp);
     }
 
     private void downgradeSyncTimes(long lastCorrectTimestamp) {

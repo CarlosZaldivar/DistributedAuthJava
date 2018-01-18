@@ -36,6 +36,10 @@ public class FatRequestsSender {
     }
 
     private void handleFatRequestResponse(Neighbour neighbour, List<Operation> historyDifferece, FatRequestResponse fatRequestResponse) {
+        if (fatRequestResponse.getTimestamp() < DistributedAuthApplication.getLastConflictResolution()) {
+            return;
+        }
+
         switch (fatRequestResponse.getStatus()) {
             case OK:
                 long neighbourSyncTime = historyDifferece.get(historyDifferece.size() - 1).getTimestamp();
@@ -111,7 +115,7 @@ public class FatRequestsSender {
         }
 
         logger.info(String.format("Sending FatRequest to %s with URL %s", neighbour.getId(), neighbour.getUrl()));
-        FatRequest fatRequest = new FatRequest(DistributedAuthApplication.getInstanceName(), historyDifference, Neighbours.getSyncTimes());
+        FatRequest fatRequest = new FatRequest(DistributedAuthApplication.getInstanceName(), historyDifference, Neighbours.getSyncTimes(), System.currentTimeMillis());
 
         CloseableHttpAsyncClient client = HttpAsyncClients.createDefault();
         client.start();

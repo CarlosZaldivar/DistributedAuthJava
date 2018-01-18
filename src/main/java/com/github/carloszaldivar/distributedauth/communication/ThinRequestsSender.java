@@ -55,7 +55,7 @@ public class ThinRequestsSender {
     }
 
     private void sendThinRequest(Neighbour neighbour, Map<String, Long> syncTimes, Operation lastOperation) {
-        ThinRequest thinRequest = new ThinRequest(neighbour.getId(), lastOperation.getHash(), syncTimes);
+        ThinRequest thinRequest = new ThinRequest(neighbour.getId(), lastOperation.getHash(), syncTimes, System.currentTimeMillis());
         HttpPost httpRequest = createHttpRequest(thinRequest, neighbour);
 
         CloseableHttpAsyncClient client = HttpAsyncClients.createDefault();
@@ -112,6 +112,10 @@ public class ThinRequestsSender {
     }
 
     private void handleThinRequestResponse(Neighbour neighbour, Operation lastOperation, ThinRequestResponse thinRequestResponse) {
+        if (thinRequestResponse.getTimestamp() < DistributedAuthApplication.getLastConflictResolution()) {
+            return;
+        }
+
         switch (thinRequestResponse.getStatus()) {
             case UPDATE_NEEDED:
                 (new FatRequestsSender()).sendFatRequest(neighbour);

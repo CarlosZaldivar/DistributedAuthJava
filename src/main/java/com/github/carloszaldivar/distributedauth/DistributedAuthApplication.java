@@ -15,9 +15,10 @@ import java.util.List;
 public class DistributedAuthApplication {
 	private static String instanceName;
 	private static State state = State.SYNCHRONIZED;
-	private static boolean historyCleaning = true;
+    private static long lastConflictResolution = 0;
 
-	public enum State { SYNCHRONIZED, UNSYNCHRONIZED, CONFLICT, TOO_OLD }
+    public enum State { SYNCHRONIZED, UNSYNCHRONIZED, CONFLICT, TOO_OLD }
+    private static boolean historyCleaning = true;
 
 	public static void main(String[] args) {
         if (args.length > 0) {
@@ -54,6 +55,14 @@ public class DistributedAuthApplication {
 
     public static void setState(State state) {
         DistributedAuthApplication.state = state;
+    }
+
+    public static long getLastConflictResolution() {
+        return lastConflictResolution;
+    }
+
+    public static void setLastConflictResolution(long lastConflictResolution) {
+	    DistributedAuthApplication.lastConflictResolution = lastConflictResolution;
     }
 
     private static boolean isSynchronized() {

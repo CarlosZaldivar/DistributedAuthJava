@@ -56,7 +56,7 @@ public class DistributedAuthApplicationTests {
         neighboursController.addNeighbour(neighbour);
 
         Operation operation = createFirstOperation(100);
-        FatRequest request = new FatRequest(neighbour.getId(), Collections.singletonList(operation), new HashMap<>());
+        FatRequest request = new FatRequest(neighbour.getId(), Collections.singletonList(operation), new HashMap<>(), System.currentTimeMillis());
 
         FatRequestController fatRequestController = new FatRequestController();
         FatRequestResponse response = fatRequestController.handleFatRequest(request).getBody();
@@ -74,7 +74,7 @@ public class DistributedAuthApplicationTests {
         ClientsController clientsController = new ClientsController();
         clientsController.create(client1);
 
-        FatRequest request = new FatRequest(neighbour.getId(), Collections.singletonList(Operations.get().get(0)), new HashMap<>());
+        FatRequest request = new FatRequest(neighbour.getId(), Collections.singletonList(Operations.get().get(0)), new HashMap<>(), System.currentTimeMillis());
 
         FatRequestController fatRequestController = new FatRequestController();
         FatRequestResponse response = fatRequestController.handleFatRequest(request).getBody();
@@ -94,7 +94,7 @@ public class DistributedAuthApplicationTests {
 
         Operation firstOperation = Operations.get().get(0);
         List<Operation> history = Arrays.asList(firstOperation, createSecondOperation(firstOperation.getTimestamp() + 100, firstOperation, client2));
-        FatRequest request = new FatRequest(neighbour.getId(), history, new HashMap<>());
+        FatRequest request = new FatRequest(neighbour.getId(), history, new HashMap<>(), System.currentTimeMillis());
         Assert.assertTrue(request.getHistory().get(0).isBefore(request.getHistory().get(1)));
 
         FatRequestController fatRequestController = new FatRequestController();
@@ -114,7 +114,7 @@ public class DistributedAuthApplicationTests {
         clientsController.create(client1);
         clientsController.create(client2);
 
-        FatRequest request = new FatRequest(neighbour.getId(), Collections.singletonList(Operations.get().get(0)), new HashMap<>());
+        FatRequest request = new FatRequest(neighbour.getId(), Collections.singletonList(Operations.get().get(0)), new HashMap<>(), System.currentTimeMillis());
 
         FatRequestController fatRequestController = new FatRequestController();
         FatRequestResponse response = fatRequestController.handleFatRequest(request).getBody();
@@ -138,7 +138,7 @@ public class DistributedAuthApplicationTests {
 
         Operation firstOperation = Operations.get().get(0);
         Operation secondOperation = createSecondOperation(firstOperation.getTimestamp() + 1, firstOperation, client2);
-        FatRequest request = new FatRequest(neighbour.getId(), Arrays.asList(firstOperation, secondOperation), new HashMap<>());
+        FatRequest request = new FatRequest(neighbour.getId(), Arrays.asList(firstOperation, secondOperation), new HashMap<>(), System.currentTimeMillis());
 
         FatRequestController fatRequestController = new FatRequestController();
         FatRequestResponse response = fatRequestController.handleFatRequest(request).getBody();
@@ -159,7 +159,7 @@ public class DistributedAuthApplicationTests {
 
         Operation firstOperation = Operations.get().get(0);
         Operation thirdOperation = createSecondOperation(Operations.get().get(1).getTimestamp() + 100, firstOperation, client3);
-        FatRequest request = new FatRequest(neighbour.getId(), Arrays.asList(firstOperation, thirdOperation), new HashMap<>());
+        FatRequest request = new FatRequest(neighbour.getId(), Arrays.asList(firstOperation, thirdOperation), new HashMap<>(), System.currentTimeMillis());
 
         FatRequestController fatRequestController = new FatRequestController();
         FatRequestResponse response = fatRequestController.handleFatRequest(request).getBody();
@@ -173,7 +173,7 @@ public class DistributedAuthApplicationTests {
         neighboursController.addNeighbour(neighbour);
 
         String hash = "33222d7f92744e44576394923be7f3bb6d61df63f1686523e0863900b957efd9";
-        ThinRequest request = new ThinRequest(neighbour.getId(), hash, new HashMap<>());
+        ThinRequest request = new ThinRequest(neighbour.getId(), hash, new HashMap<>(), System.currentTimeMillis());
 
         Operation operation = createFirstOperation(100);
         Operations.get().add(operation);
@@ -189,7 +189,7 @@ public class DistributedAuthApplicationTests {
         neighboursController.addNeighbour(neighbour);
 
         String hash = "a44b99bb6206ea2e45fe442819e30e37f521d99a98ed9a8319a4246214627b2d";
-        ThinRequest request = new ThinRequest(neighbour.getId(), hash, new HashMap<>());
+        ThinRequest request = new ThinRequest(neighbour.getId(), hash, new HashMap<>(), System.currentTimeMillis());
 
         ThinRequestController thinRequestController = new ThinRequestController();
         ThinRequestResponse response = thinRequestController.handleThinRequest(request).getBody();
