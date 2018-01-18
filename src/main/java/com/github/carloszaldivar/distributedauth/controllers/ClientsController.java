@@ -72,7 +72,13 @@ public class ClientsController {
         validateClientNumber(clientNumber);
         validateAuthorizationData(request);
         Client client = Clients.get().get(clientNumber);
-        HttpStatus status = tryToAuthorizeOperation(client, request) ? HttpStatus.OK : HttpStatus.UNAUTHORIZED;
+        Client clientBefore = new Client(client);
+        boolean isAuthorized = tryToAuthorizeOperation(client, request);
+        if (isAuthorized) {
+            Operation authorizingOperation = createAuthorizingOperation(System.currentTimeMillis(), clientBefore, client);
+            Operations.get().add(authorizingOperation);
+        }
+        HttpStatus status = isAuthorized ? HttpStatus.OK : HttpStatus.UNAUTHORIZED;
         logger.info(String.format("Client's %s operation authorization attempt. Result - %s", clientNumber, status));
         return new ResponseEntity(status);
     }
@@ -82,7 +88,14 @@ public class ClientsController {
         validateClientNumber(clientNumber);
         validateAuthorizationData(request);
         Client client = Clients.get().get(clientNumber);
-        HttpStatus status = tryToActivateNewPasswordList(client, request) ? HttpStatus.OK : HttpStatus.UNAUTHORIZED;
+        Client clientBefore = new Client(client);
+
+        boolean isActivated = tryToActivateNewPasswordList(client, request);
+        if (isActivated) {
+            Operation listActivationOperation = createListActivationOperation(System.currentTimeMillis(), clientBefore, client);
+            Operations.get().add(listActivationOperation);
+        }
+        HttpStatus status = isActivated ? HttpStatus.OK : HttpStatus.UNAUTHORIZED;
         logger.info(String.format("Client's %s new password list activation attempt. Result - %s", clientNumber, status));
         return new ResponseEntity(status);
     }
@@ -168,6 +181,32 @@ public class ClientsController {
         }
 
         return new Operation(unixTimestamp, Operation.Type.REMOVING_CLIENT, number, client, null, lastOperation);
+    }
+
+    private Operation createAuthorizingOperation(long unixTimestamp, Client clientBefore, Client clientAfter) {
+        List<Operation> operations = Operations.get();
+        Operation lastOperation = null;
+        int number = 0;
+
+        if (!operations.isEmpty()) {
+            lastOperation = Operations.get().get(Operations.get().size() - 1);
+            number = lastOperation.getNumber();
+        }
+
+        return new Operation(unixTimestamp, Operation.Type.AUTHORIZATION, number, clientBefore, clientAfter, lastOperation);
+    }
+
+    private Operation createListActivationOperation(long unixTimestamp, Client clientBefore, Client clientAfter) {
+        List<Operation> operations = Operations.get();
+        Operation lastOperation = null;
+        int number = 0;
+
+        if (!operations.isEmpty()) {
+            lastOperation = Operations.get().get(Operations.get().size() - 1);
+            number = lastOperation.getNumber();
+        }
+
+        return new Operation(unixTimestamp, Operation.Type.LIST_ACTIVATION, number, clientBefore, clientAfter, lastOperation);
     }
 
     private boolean tryToAuthenticate(String clientNumber, String pin) {

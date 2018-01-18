@@ -199,6 +199,16 @@ public class FatRequestController {
                     Clients.get().remove(clientToRemove.getNumber());
                     break;
                 }
+                case AUTHORIZATION: {
+                    Client client = operation.getClientAfter();
+                    Clients.get().put(client.getNumber(), client);
+                    break;
+                }
+                case LIST_ACTIVATION: {
+                    Client client = operation.getClientAfter();
+                    Clients.get().put(client.getNumber(), client);
+                    break;
+                }
                 default:
                     throw new RuntimeException("Operation type not supported.");
             }
@@ -214,6 +224,16 @@ public class FatRequestController {
                     break;
                 }
                 case REMOVING_CLIENT: {
+                    Client client = operation.getClientBefore();
+                    Clients.get().put(client.getNumber(), client);
+                    break;
+                }
+                case AUTHORIZATION: {
+                    Client client = operation.getClientBefore();
+                    Clients.get().put(client.getNumber(), client);
+                    break;
+                }
+                case LIST_ACTIVATION: {
                     Client client = operation.getClientBefore();
                     Clients.get().put(client.getNumber(), client);
                     break;
