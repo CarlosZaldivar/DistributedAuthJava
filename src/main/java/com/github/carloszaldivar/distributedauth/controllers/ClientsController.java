@@ -61,9 +61,12 @@ public class ClientsController {
     }
 
     @RequestMapping(method=DELETE, value={"/public/clients/{id}"})
-    public ResponseEntity delete(@PathVariable(value="id") String clientNumber) {
+    public ResponseEntity delete(@PathVariable(value="id") String clientNumber, @RequestBody String pin) {
         checkServerState();
         validateClientNumber(clientNumber);
+        if (!tryToAuthenticate(clientNumber, pin)) {
+            return new ResponseEntity(HttpStatus.UNAUTHORIZED);
+        }
         operationsRepository.lockWrite();
         try {
             Client clientToRemove = clientsRepository.get(clientNumber);
@@ -95,7 +98,9 @@ public class ClientsController {
         boolean isAuthorized = tryToAuthorizeOperation(client, request);
         HttpStatus status = isAuthorized ? HttpStatus.OK : HttpStatus.UNAUTHORIZED;
         logger.info(String.format("Client's %s operation authorization attempt. Result - %s", clientNumber, status));
-        (new FatRequestsSender(neighboursRepository, operationsRepository)).sendFatRequests();
+        if (isAuthorized) {
+            (new FatRequestsSender(neighboursRepository, operationsRepository)).sendFatRequests();
+        }
         DistributedAuthApplication.setState(DistributedAuthApplication.State.UNSYNCHRONIZED);
         return new ResponseEntity(status);
     }
@@ -108,7 +113,9 @@ public class ClientsController {
         boolean isActivated = tryToActivateNewPasswordList(client, request);
         HttpStatus status = isActivated ? HttpStatus.OK : HttpStatus.UNAUTHORIZED;
         logger.info(String.format("Client's %s new password list activation attempt. Result - %s", clientNumber, status));
-        (new FatRequestsSender(neighboursRepository, operationsRepository)).sendFatRequests();
+        if (isActivated) {
+            (new FatRequestsSender(neighboursRepository, operationsRepository)).sendFatRequests();
+        }
         DistributedAuthApplication.setState(DistributedAuthApplication.State.UNSYNCHRONIZED);
         return new ResponseEntity(status);
     }
