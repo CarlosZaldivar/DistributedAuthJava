@@ -212,7 +212,7 @@ public class FatRequestController {
             switch (operation.getType()) {
                 case ADDING_CLIENT: {
                     Client newClient = operation.getClientAfter();
-                    clientsRepository.add(newClient);
+                    clientsRepository.add(new Client(newClient));
                     break;
                 }
                 case REMOVING_CLIENT: {
@@ -221,12 +221,12 @@ public class FatRequestController {
                 }
                 case AUTHORIZATION: {
                     Client client = operation.getClientAfter();
-                    clientsRepository.update(client);
+                    clientsRepository.update(new Client(client));
                     break;
                 }
                 case LIST_ACTIVATION: {
                     Client client = operation.getClientAfter();
-                    clientsRepository.update(client);
+                    clientsRepository.update(new Client(client));
                     break;
                 }
                 default:
@@ -245,17 +245,17 @@ public class FatRequestController {
                 }
                 case REMOVING_CLIENT: {
                     Client client = operation.getClientBefore();
-                    clientsRepository.add(client);
+                    clientsRepository.add(new Client(client));
                     break;
                 }
                 case AUTHORIZATION: {
                     Client client = operation.getClientBefore();
-                    clientsRepository.update(client);
+                    clientsRepository.update(new Client(client));
                     break;
                 }
                 case LIST_ACTIVATION: {
                     Client client = operation.getClientBefore();
-                    clientsRepository.update(client);
+                    clientsRepository.update(new Client(client));
                     break;
                 }
                 default:

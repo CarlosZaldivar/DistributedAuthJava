@@ -228,14 +228,14 @@ public class ClientsController {
     private void addClientAddingOperation(long unixTimestamp, Client client) {
         Operation lastOperation = operationsRepository.getLast();
         int number = lastOperation != null ? lastOperation.getNumber() + 1 : 0;
-        Operation newOperation = new Operation(unixTimestamp, Operation.Type.ADDING_CLIENT, number, null, client, lastOperation);
+        Operation newOperation = new Operation(unixTimestamp, Operation.Type.ADDING_CLIENT, number, null, new Client(client), lastOperation);
         operationsRepository.addToEnd(newOperation);
     }
 
     private void addClientDeletingOperation(long unixTimestamp, Client client) {
         Operation lastOperation = operationsRepository.getLast();
         int number = lastOperation != null ? lastOperation.getNumber() + 1 : 0;
-        Operation newOperation =  new Operation(unixTimestamp, Operation.Type.REMOVING_CLIENT, number, client, null, lastOperation);
+        Operation newOperation =  new Operation(unixTimestamp, Operation.Type.REMOVING_CLIENT, number, new Client(client), null, lastOperation);
         operationsRepository.addToEnd(newOperation);
     }
 
@@ -243,14 +243,16 @@ public class ClientsController {
     private void addAuthorizingOperation(long unixTimestamp, Client clientBefore, Client clientAfter) {
         Operation lastOperation = operationsRepository.getLast();
         int number = lastOperation != null ? lastOperation.getNumber() + 1 : 0;
-        Operation newOperation = new Operation(unixTimestamp, Operation.Type.AUTHORIZATION, number, clientBefore, clientAfter, lastOperation);
+        Operation newOperation = new Operation(unixTimestamp, Operation.Type.AUTHORIZATION, number,
+                new Client(clientBefore), new Client(clientAfter), lastOperation);
         operationsRepository.addToEnd(newOperation);
     }
 
     private void addListActivationOperation(long unixTimestamp, Client clientBefore, Client clientAfter) {
         Operation lastOperation = operationsRepository.getLast();
         int number = lastOperation != null ? lastOperation.getNumber() + 1 : 0;
-        Operation newOperation = new Operation(unixTimestamp, Operation.Type.LIST_ACTIVATION, number, clientBefore, clientAfter, lastOperation);
+        Operation newOperation = new Operation(unixTimestamp, Operation.Type.LIST_ACTIVATION, number,
+                new Client(clientBefore), new Client(clientAfter), lastOperation);
         operationsRepository.addToEnd(newOperation);
     }
 }
