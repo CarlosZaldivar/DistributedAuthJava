@@ -19,8 +19,8 @@ public class OperationTests {
 
     @Test
     public void calculateHashTest() {
-        Assert.assertEquals("2fe5bdddb61055232b39e799e544e2737e1f4d0490634a16e2005d27fd9accfb", firstOperation.getHash());
-        Assert.assertEquals("f25feb421634285a3d11e5993aa935e2412ec52718ac505453413c1f7efc38f4", secondOperation.getHash());
+        Assert.assertEquals("6c8a259ddcfdb14dcf08ed0dac1313de982af7320e865fb306021086dbe323bf", firstOperation.getHash());
+        Assert.assertEquals("8d353dafd19a95e4b763fc9fda39dcab8b086122ac54efc0f5df73537518f728", secondOperation.getHash());
     }
 
     @Test

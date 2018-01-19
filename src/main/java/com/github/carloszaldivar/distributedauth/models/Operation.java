@@ -104,7 +104,7 @@ public class Operation {
             throw new RuntimeException(e);
         }
 
-        String prehashString = String.format("%s%s%s%s", type.toString(), serializedBefore, serializedAfter,
+        String prehashString = String.format("%s%s%s%s%s", timestamp, type.toString(), serializedBefore, serializedAfter,
                 previousOperation == null ? "" : previousOperation.getHash());
         MessageDigest digest;
         try {

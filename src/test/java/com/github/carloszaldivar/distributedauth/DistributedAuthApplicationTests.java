@@ -174,7 +174,7 @@ public class DistributedAuthApplicationTests {
         NeighboursController neighboursController = new NeighboursController(neighboursRepository);
         neighboursController.addNeighbour(neighbour);
 
-        String hash = "33222d7f92744e44576394923be7f3bb6d61df63f1686523e0863900b957efd9";
+        String hash = "732621d1f7a1121720ad39d1d9b309909532dd8560bd7be06c29b91dde8fbffd";
         ThinRequest request = new ThinRequest(neighbour.getId(), hash, new HashMap<>(), System.currentTimeMillis());
 
         Operation operation = createFirstOperation(100);
