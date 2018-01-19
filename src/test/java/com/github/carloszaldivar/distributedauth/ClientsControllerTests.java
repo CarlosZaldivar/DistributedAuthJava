@@ -1,9 +1,7 @@
 package com.github.carloszaldivar.distributedauth;
 
 import com.github.carloszaldivar.distributedauth.controllers.ClientsController;
-import com.github.carloszaldivar.distributedauth.data.Clients;
-import com.github.carloszaldivar.distributedauth.data.Neighbours;
-import com.github.carloszaldivar.distributedauth.data.Operations;
+import com.github.carloszaldivar.distributedauth.data.*;
 import com.github.carloszaldivar.distributedauth.models.AuthorizationRequest;
 import com.github.carloszaldivar.distributedauth.models.Client;
 import com.github.carloszaldivar.distributedauth.models.Operation;
@@ -17,12 +15,13 @@ import java.util.List;
 import static com.github.carloszaldivar.distributedauth.models.OneTimePasswordList.PASSWORDS_PER_LIST;
 
 public class ClientsControllerTests {
+    private NeighboursRepository neighboursRepository = new LocalNeighboursRepository();
 
     @Test
     public void addingClientTest() {
         Assert.assertEquals(0, Clients.get().size());
         Assert.assertEquals(0, Operations.get().size());
-        ClientsController controller = new ClientsController();
+        ClientsController controller = new ClientsController(neighboursRepository);
         Client client = new Client("123456", "1234", null, null);
 
         controller.create(client);
@@ -37,7 +36,7 @@ public class ClientsControllerTests {
     public void deletingClientTest() {
         Assert.assertEquals(0, Clients.get().size());
         Assert.assertEquals(0, Operations.get().size());
-        ClientsController controller = new ClientsController();
+        ClientsController controller = new ClientsController(neighboursRepository);
         Client client = new Client("123456", "1234", null, null);
 
         controller.create(client);
@@ -48,7 +47,7 @@ public class ClientsControllerTests {
 
     @Test
     public void authenticateTest() {
-        ClientsController controller = new ClientsController();
+        ClientsController controller = new ClientsController(neighboursRepository);
         Client client = new Client("123456", "1234", null, null);
 
         controller.create(client);
@@ -57,7 +56,7 @@ public class ClientsControllerTests {
 
     @Test
     public void authorizeTest() {
-        ClientsController controller = new ClientsController();
+        ClientsController controller = new ClientsController(neighboursRepository);
         Client client = new Client("123456", "1234", null, null);
 
         controller.create(client);
@@ -70,7 +69,7 @@ public class ClientsControllerTests {
 
     @Test
     public void activateNewListTest() {
-        ClientsController controller = new ClientsController();
+        ClientsController controller = new ClientsController(neighboursRepository);
         Client client = new Client("123456", "1234", null, null);
 
         controller.create(client);
@@ -86,8 +85,7 @@ public class ClientsControllerTests {
     @After
     public void cleanGlobalData() {
         Clients.get().clear();
-        Neighbours.get().clear();
-        Neighbours.getSyncTimes().clear();
+        neighboursRepository.clear();
         Operations.get().clear();
         DistributedAuthApplication.setState(DistributedAuthApplication.State.SYNCHRONIZED);
     }

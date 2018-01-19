@@ -2,9 +2,7 @@ package com.github.carloszaldivar.distributedauth;
 
 import com.github.carloszaldivar.distributedauth.controllers.ClientsController;
 import com.github.carloszaldivar.distributedauth.controllers.SoftAuthorizationController;
-import com.github.carloszaldivar.distributedauth.data.Clients;
-import com.github.carloszaldivar.distributedauth.data.Neighbours;
-import com.github.carloszaldivar.distributedauth.data.Operations;
+import com.github.carloszaldivar.distributedauth.data.*;
 import com.github.carloszaldivar.distributedauth.models.AuthorizationRequest;
 import com.github.carloszaldivar.distributedauth.models.Client;
 import org.junit.After;
@@ -17,10 +15,12 @@ import java.util.List;
 import static com.github.carloszaldivar.distributedauth.models.OneTimePasswordList.PASSWORDS_PER_LIST;
 
 public class SoftAuthorizationControllerTests {
+    private NeighboursRepository neighboursRepository = new LocalNeighboursRepository();
+
     @Test
     public void authorizeOperationTest() {
         Client client = new Client("123456", "1234", null, null);
-        ClientsController clientsController = new ClientsController();
+        ClientsController clientsController = new ClientsController(neighboursRepository);
         clientsController.create(client);
         SoftAuthorizationController softAuthorizationController = new SoftAuthorizationController();
 
@@ -31,7 +31,7 @@ public class SoftAuthorizationControllerTests {
     @Test
     public void activateNewListTest() {
         Client client = new Client("123456", "1234", null, null);
-        ClientsController clientsController = new ClientsController();
+        ClientsController clientsController = new ClientsController(neighboursRepository);
         clientsController.create(client);
 
         List<String> passwords = client.getActivatedList().getPasswords();
@@ -48,8 +48,7 @@ public class SoftAuthorizationControllerTests {
     @After
     public void cleanGlobalData() {
         Clients.get().clear();
-        Neighbours.get().clear();
-        Neighbours.getSyncTimes().clear();
+        neighboursRepository.clear();
         Operations.get().clear();
         DistributedAuthApplication.setState(DistributedAuthApplication.State.SYNCHRONIZED);
     }

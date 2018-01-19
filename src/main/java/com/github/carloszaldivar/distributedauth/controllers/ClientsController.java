@@ -2,13 +2,14 @@ package com.github.carloszaldivar.distributedauth.controllers;
 
 import com.github.carloszaldivar.distributedauth.DistributedAuthApplication;
 import com.github.carloszaldivar.distributedauth.communication.AuthRequestsSender;
-import com.github.carloszaldivar.distributedauth.data.Neighbours;
 import com.github.carloszaldivar.distributedauth.communication.FatRequestsSender;
+import com.github.carloszaldivar.distributedauth.data.NeighboursRepository;
 import com.github.carloszaldivar.distributedauth.models.*;
 import com.github.carloszaldivar.distributedauth.data.Clients;
 import com.github.carloszaldivar.distributedauth.data.Operations;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -24,6 +25,13 @@ import static org.springframework.web.bind.annotation.RequestMethod.GET;
 public class ClientsController {
     private Logger logger = LoggerFactory.getLogger("com.github.carloszaldivar.distributedauth.controllers.ClientsController");
 
+    @Autowired
+    private NeighboursRepository neighboursRepository;
+
+    public ClientsController(NeighboursRepository neighboursRepository) {
+        this.neighboursRepository = neighboursRepository;
+    }
+
     @RequestMapping(method=POST, value={"/clients"})
     public ResponseEntity create(@RequestBody Client client) {
         checkServerState();
@@ -33,7 +41,7 @@ public class ClientsController {
         Operation addingClientOperation = createClientAddingOperation(System.currentTimeMillis(), client);
         Operations.get().add(addingClientOperation);
         logger.info("Created client " + client.getNumber());
-        (new FatRequestsSender()).sendFatRequests();
+        (new FatRequestsSender(neighboursRepository)).sendFatRequests();
         DistributedAuthApplication.setState(DistributedAuthApplication.State.UNSYNCHRONIZED);
         return new ResponseEntity(HttpStatus.CREATED);
     }
@@ -53,7 +61,7 @@ public class ClientsController {
         Clients.get().remove(clientNumber);
         Operations.get().add(deletingClientOperation);
         logger.info("Removed client " + client.getNumber());
-        (new FatRequestsSender()).sendFatRequests();
+        (new FatRequestsSender(neighboursRepository)).sendFatRequests();
         DistributedAuthApplication.setState(DistributedAuthApplication.State.UNSYNCHRONIZED);
         return new ResponseEntity(HttpStatus.NO_CONTENT);
     }
@@ -210,7 +218,7 @@ public class ClientsController {
     }
 
     private boolean tryToAuthenticate(String clientNumber, String pin) {
-        List<Neighbour> specialNeighbours = Neighbours.get().values().stream().filter(Neighbour::isSpecial).collect(Collectors.toList());
+        List<Neighbour> specialNeighbours = neighboursRepository.getNeighbours().values().stream().filter(Neighbour::isSpecial).collect(Collectors.toList());
         AuthRequestsSender requestsSender = new AuthRequestsSender();
         for (Neighbour specialNeighbour : specialNeighbours) {
             if (!requestsSender.neighbourAgreesToAuthenticate(specialNeighbour, clientNumber, pin)) {
@@ -221,7 +229,7 @@ public class ClientsController {
     }
 
     private boolean tryToAuthorizeOperation(Client client, AuthorizationRequest request) {
-        List<Neighbour> specialNeighbours = Neighbours.get().values().stream().filter(Neighbour::isSpecial).collect(Collectors.toList());
+        List<Neighbour> specialNeighbours = neighboursRepository.getNeighbours().values().stream().filter(Neighbour::isSpecial).collect(Collectors.toList());
         AuthRequestsSender requestsSender = new AuthRequestsSender();
         for (Neighbour specialNeighbour : specialNeighbours) {
             if (!requestsSender.neighbourAgreesToAuthorizeOperation(specialNeighbour, client.getNumber(), request)) {
@@ -232,7 +240,7 @@ public class ClientsController {
     }
 
     private boolean tryToActivateNewPasswordList(Client client, AuthorizationRequest request) {
-        List<Neighbour> specialNeighbours = Neighbours.get().values().stream().filter(Neighbour::isSpecial).collect(Collectors.toList());
+        List<Neighbour> specialNeighbours = neighboursRepository.getNeighbours().values().stream().filter(Neighbour::isSpecial).collect(Collectors.toList());
         AuthRequestsSender requestsSender = new AuthRequestsSender();
         for (Neighbour specialNeighbour : specialNeighbours) {
             if (!requestsSender.neighbourAgreesToActivateNewPasswordList(specialNeighbour, client.getNumber(), request)) {

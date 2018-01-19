@@ -1,6 +1,7 @@
 package com.github.carloszaldivar.distributedauth;
 
-import com.github.carloszaldivar.distributedauth.data.Neighbours;
+import com.github.carloszaldivar.distributedauth.data.LocalNeighboursRepository;
+import com.github.carloszaldivar.distributedauth.data.NeighboursRepository;
 import com.github.carloszaldivar.distributedauth.data.Operations;
 import com.github.carloszaldivar.distributedauth.models.Neighbour;
 import com.github.carloszaldivar.distributedauth.models.Operation;
@@ -16,6 +17,7 @@ public class DistributedAuthApplication {
 	private static String instanceName;
 	private static State state = State.SYNCHRONIZED;
     private static long lastConflictResolution = 0;
+    private static NeighboursRepository neighboursRepository = new LocalNeighboursRepository();
 
     public enum State { SYNCHRONIZED, UNSYNCHRONIZED, CONFLICT, TOO_OLD }
     private static boolean historyCleaning = true;
@@ -35,7 +37,7 @@ public class DistributedAuthApplication {
 	public static void updateState() {
 	    if (isSynchronized()) {
 	        state = State.SYNCHRONIZED;
-	        if (historyCleaning && Neighbours.get().size() > 0) {
+	        if (historyCleaning && neighboursRepository.getNeighbours().size() > 0) {
 	            Operations.get().clear();
             }
         }
@@ -77,8 +79,8 @@ public class DistributedAuthApplication {
         }
 
         long lastTimestamp = operations.get(operations.size() - 1).getTimestamp();
-        for (Neighbour neighbour : Neighbours.get().values()) {
-            if (Neighbours.getSyncTimes().get(neighbour.getId()) != lastTimestamp) {
+        for (Neighbour neighbour : neighboursRepository.getNeighbours().values()) {
+            if (neighboursRepository.getSyncTimes().get(neighbour.getId()) != lastTimestamp) {
                 return false;
             }
         }

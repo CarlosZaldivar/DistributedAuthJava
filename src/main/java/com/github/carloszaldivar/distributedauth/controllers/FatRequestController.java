@@ -1,12 +1,11 @@
 package com.github.carloszaldivar.distributedauth.controllers;
 
 import com.github.carloszaldivar.distributedauth.DistributedAuthApplication;
-import com.github.carloszaldivar.distributedauth.data.Clients;
-import com.github.carloszaldivar.distributedauth.data.Neighbours;
+import com.github.carloszaldivar.distributedauth.data.*;
 import com.github.carloszaldivar.distributedauth.models.*;
-import com.github.carloszaldivar.distributedauth.data.Operations;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -26,6 +25,13 @@ public class FatRequestController {
     private List<Operation> localHistory;
     private List<Operation> neighbourHistory;
     private FatRequest fatRequest;
+
+    @Autowired
+    private NeighboursRepository neighboursRepository;
+
+    public FatRequestController(NeighboursRepository neighboursRepository) {
+        this.neighboursRepository = neighboursRepository;
+    }
 
     @RequestMapping(method=POST, value={"/fat"})
     public ResponseEntity<FatRequestResponse> handleFatRequest(@RequestBody FatRequest fatRequest) {
@@ -63,13 +69,13 @@ public class FatRequestController {
                 return handleLocalTooOld(divergencePoint, requestTimestamp);
             case NEIGHBOUR_TOO_OLD:
                 logger.info("Sender's history was not up to date. Informing him about it.");
-                return new FatRequestResponse(FatRequestResponse.Status.U2OLD, Neighbours.getSyncTimes(), requestTimestamp);
+                return new FatRequestResponse(FatRequestResponse.Status.U2OLD, neighboursRepository.getSyncTimes(), requestTimestamp);
             case LOCAL_NOT_CORRECT:
                 logger.info("Local history was incorrect. Fixing it.");
                 return handleLocalNotCorrect(divergencePoint, requestTimestamp);
             case NEIGHBOUR_NOT_CORRECT:
                 logger.info("Sender's history was incorrect. Informing him about it.");
-                return new FatRequestResponse(FatRequestResponse.Status.CONFLICT, Neighbours.getSyncTimes(), requestTimestamp);
+                return new FatRequestResponse(FatRequestResponse.Status.CONFLICT, neighboursRepository.getSyncTimes(), requestTimestamp);
             default:
                 throw new RuntimeException("Unexpected divergence point.");
         }
@@ -127,7 +133,7 @@ public class FatRequestController {
         apply(historyDifference);
         updateSyncTimes(fatRequest.getSyncTimes());
         DistributedAuthApplication.setState(DistributedAuthApplication.State.UNSYNCHRONIZED);
-        return new FatRequestResponse(FatRequestResponse.Status.OK, Neighbours.getSyncTimes(), requestTimesamp);
+        return new FatRequestResponse(FatRequestResponse.Status.OK, neighboursRepository.getSyncTimes(), requestTimesamp);
     }
 
     private FatRequestResponse handleLocalNotCorrect(DivergencePoint divergencePoint, long requestTimestamp) {
@@ -145,12 +151,12 @@ public class FatRequestController {
         updateSyncTimes(fatRequest.getSyncTimes());
         DistributedAuthApplication.setState(DistributedAuthApplication.State.UNSYNCHRONIZED);
         DistributedAuthApplication.setLastConflictResolution(requestTimestamp);
-        return new FatRequestResponse(FatRequestResponse.Status.OK, Neighbours.getSyncTimes(), requestTimestamp);
+        return new FatRequestResponse(FatRequestResponse.Status.OK, neighboursRepository.getSyncTimes(), requestTimestamp);
     }
 
     private FatRequestResponse handleSameHistory(long requestTimestamp) {
         updateSyncTimes(fatRequest.getSyncTimes());
-        return new FatRequestResponse(FatRequestResponse.Status.OK, Neighbours.getSyncTimes(), requestTimestamp);
+        return new FatRequestResponse(FatRequestResponse.Status.OK, neighboursRepository.getSyncTimes(), requestTimestamp);
     }
 
     private boolean sameHistory() {
@@ -163,26 +169,28 @@ public class FatRequestController {
         localHistory.addAll(neighbourHistory);
         apply(neighbourHistory);
         updateSyncTimes(fatRequest.getSyncTimes());
-        return new FatRequestResponse(FatRequestResponse.Status.OK, Neighbours.getSyncTimes(), requestTimestamp);
+        return new FatRequestResponse(FatRequestResponse.Status.OK, neighboursRepository.getSyncTimes(), requestTimestamp);
     }
 
     private void downgradeSyncTimes(long lastCorrectTimestamp) {
-        for (Map.Entry<String, Long> syncTime : Neighbours.getSyncTimes().entrySet()) {
+        Map<String, Long> syncTimes = neighboursRepository.getSyncTimes();
+        for (Map.Entry<String, Long> syncTime : syncTimes.entrySet()) {
             if (syncTime.getValue() > lastCorrectTimestamp) {
-                Neighbours.getSyncTimes().put(syncTime.getKey(), lastCorrectTimestamp);
+                neighboursRepository.updateSyncTime(syncTime.getKey(), lastCorrectTimestamp);
             }
         }
     }
 
     private void updateSyncTimes(Map<String, Long> syncTimes) {
         long neighboursLastTimestamp = neighbourHistory.get(neighbourHistory.size() - 1).getTimestamp();
-        Neighbours.getSyncTimes().put(fatRequest.getSenderId(), neighboursLastTimestamp);
+        neighboursRepository.updateSyncTime(fatRequest.getSenderId(), neighboursLastTimestamp);
 
+        Map<String, Long> savedSyncTimes = neighboursRepository.getSyncTimes();
         for (Map.Entry<String, Long> syncTime : syncTimes.entrySet()) {
             String neighbourId = syncTime.getKey();
-            if (Neighbours.getSyncTimes().containsKey(neighbourId) &&
-                    Neighbours.getSyncTimes().get(neighbourId) < syncTime.getValue()) {
-                Neighbours.getSyncTimes().put(neighbourId, syncTime.getValue());
+            if (savedSyncTimes.containsKey(neighbourId) &&
+                    savedSyncTimes.get(neighbourId) < syncTime.getValue()) {
+                neighboursRepository.updateSyncTime(neighbourId, syncTime.getValue());
             }
         }
     }

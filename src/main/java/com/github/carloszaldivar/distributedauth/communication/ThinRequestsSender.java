@@ -3,7 +3,7 @@ package com.github.carloszaldivar.distributedauth.communication;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.carloszaldivar.distributedauth.DistributedAuthApplication;
-import com.github.carloszaldivar.distributedauth.data.Neighbours;
+import com.github.carloszaldivar.distributedauth.data.NeighboursRepository;
 import com.github.carloszaldivar.distributedauth.data.Operations;
 import com.github.carloszaldivar.distributedauth.models.*;
 import org.apache.http.HttpResponse;
@@ -16,6 +16,7 @@ import org.apache.http.impl.nio.client.HttpAsyncClients;
 import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -26,6 +27,9 @@ import java.util.Map;
 @Component
 public class ThinRequestsSender {
     private Logger logger = LoggerFactory.getLogger("com.github.carloszaldivar.distributedauth.communication.ThinRequestsSender");
+
+    @Autowired
+    NeighboursRepository neighboursRepository;
 
     @Scheduled(fixedRate = 1000)
     public void sendThinRequests() {
@@ -45,8 +49,8 @@ public class ThinRequestsSender {
         }
 
         Operation lastOperation = Operations.get().get(Operations.get().size() - 1);
-        Map<String, Long> syncTimes = Neighbours.getSyncTimes();
-        for (Neighbour neighbour : Neighbours.get().values()) {
+        Map<String, Long> syncTimes = neighboursRepository.getSyncTimes();
+        for (Neighbour neighbour : neighboursRepository.getNeighbours().values()) {
             if (syncTimes.get(neighbour.getId()) < lastOperation.getTimestamp()) {
                 sendThinRequest(neighbour, syncTimes, lastOperation);
                 logger.info("Thin request sent to " + neighbour.getId());
@@ -118,7 +122,7 @@ public class ThinRequestsSender {
 
         switch (thinRequestResponse.getStatus()) {
             case UPDATE_NEEDED:
-                (new FatRequestsSender()).sendFatRequest(neighbour);
+                (new FatRequestsSender(neighboursRepository)).sendFatRequest(neighbour);
                 break;
             case UPDATE_NOT_NEEDED:
                 updateSyncTimes(thinRequestResponse.getSyncTimes(), neighbour.getId(), lastOperation.getTimestamp());
@@ -128,11 +132,12 @@ public class ThinRequestsSender {
     }
 
     private void updateSyncTimes(Map<String, Long> syncTimes, String senderId, long sendersLastTimestamp) {
-        Neighbours.getSyncTimes().put(senderId, sendersLastTimestamp);
+        neighboursRepository.updateSyncTime(senderId, sendersLastTimestamp);
+        Map<String, Long> savedSyncTimes = neighboursRepository.getSyncTimes();
         for (Map.Entry<String, Long> syncTime : syncTimes.entrySet()) {
             String neighbourId = syncTime.getKey();
-            if (Neighbours.getSyncTimes().get(neighbourId) < syncTime.getValue()) {
-                Neighbours.getSyncTimes().put(neighbourId, syncTime.getValue());
+            if (savedSyncTimes.get(neighbourId) < syncTime.getValue()) {
+                neighboursRepository.updateSyncTime(neighbourId, syncTime.getValue());
             }
         }
     }

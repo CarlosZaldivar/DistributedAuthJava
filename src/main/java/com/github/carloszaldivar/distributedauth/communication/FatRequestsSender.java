@@ -3,7 +3,7 @@ package com.github.carloszaldivar.distributedauth.communication;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.carloszaldivar.distributedauth.DistributedAuthApplication;
-import com.github.carloszaldivar.distributedauth.data.Neighbours;
+import com.github.carloszaldivar.distributedauth.data.NeighboursRepository;
 import com.github.carloszaldivar.distributedauth.data.Operations;
 import com.github.carloszaldivar.distributedauth.models.FatRequest;
 import com.github.carloszaldivar.distributedauth.models.FatRequestResponse;
@@ -29,8 +29,14 @@ import java.util.Map;
 public class FatRequestsSender {
     private Logger logger = LoggerFactory.getLogger("com.github.carloszaldivar.distributedauth.communication.FatRequestsSender");
 
+    private NeighboursRepository neighboursRepository;
+
+    public FatRequestsSender(NeighboursRepository neighboursRepository) {
+        this.neighboursRepository = neighboursRepository;
+    }
+
     public void sendFatRequests() {
-        for (Neighbour neighbour : Neighbours.get().values()) {
+        for (Neighbour neighbour : neighboursRepository.getNeighbours().values()) {
             sendFatRequest(neighbour);
         }
     }
@@ -56,11 +62,13 @@ public class FatRequestsSender {
     }
 
     private void updateSyncTimes(Map<String, Long> syncTimes, String senderId, long sendersLastTimestamp) {
-        Neighbours.getSyncTimes().put(senderId, sendersLastTimestamp);
+        neighboursRepository.updateSyncTime(senderId, sendersLastTimestamp);
+        Map<String, Long> savedSyncTimes = neighboursRepository.getSyncTimes();
         for (Map.Entry<String, Long> syncTime : syncTimes.entrySet()) {
             String neighbourId = syncTime.getKey();
-            if (Neighbours.getSyncTimes().get(neighbourId) < syncTime.getValue()) {
-                Neighbours.getSyncTimes().put(neighbourId, syncTime.getValue());
+            if (savedSyncTimes.containsKey(neighbourId) &&
+                    savedSyncTimes.get(neighbourId) < syncTime.getValue()) {
+                neighboursRepository.updateSyncTime(neighbourId, syncTime.getValue());
             }
         }
     }
@@ -95,7 +103,7 @@ public class FatRequestsSender {
     }
 
     private List<Operation> getHistoryDifference(Neighbour neighbour) {
-        long syncTime = Neighbours.getSyncTimes().get(neighbour.getId());
+        long syncTime = neighboursRepository.getSyncTimes().get(neighbour.getId());
         int i = 0;
         List<Operation> operations = Operations.get();
         if (syncTime < operations.get(0).getTimestamp()) {
@@ -115,7 +123,8 @@ public class FatRequestsSender {
         }
 
         logger.info(String.format("Sending FatRequest to %s with URL %s", neighbour.getId(), neighbour.getUrl()));
-        FatRequest fatRequest = new FatRequest(DistributedAuthApplication.getInstanceName(), historyDifference, Neighbours.getSyncTimes(), System.currentTimeMillis());
+        FatRequest fatRequest = new FatRequest(DistributedAuthApplication.getInstanceName(), historyDifference,
+                neighboursRepository.getSyncTimes(), System.currentTimeMillis());
 
         CloseableHttpAsyncClient client = HttpAsyncClients.createDefault();
         client.start();
