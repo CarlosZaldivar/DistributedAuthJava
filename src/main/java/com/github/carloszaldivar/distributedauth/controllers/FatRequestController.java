@@ -54,8 +54,10 @@ public class FatRequestController {
 
             FatRequestResponse response;
             if (localHistory.isEmpty()) {
+                logger.info("Local history was empty. Updating.");
                 response = handleEmptyLocalHistory(fatRequest.getTimestamp());
             } else if (sameHistory()) {
+                logger.info("Same histories. No need to update.");
                 response = handleSameHistory(fatRequest.getTimestamp());
             } else {
                 response = handleDifferentHistories(fatRequest.getTimestamp());
