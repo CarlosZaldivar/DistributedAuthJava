@@ -14,16 +14,6 @@ public class LocalOperationsRepository implements OperationsRepository {
     private static LinkedList<Operation> operations = new LinkedList<>();
 
     @Override
-    public void lockRead() {
-        lock.readLock().lock();
-    }
-
-    @Override
-    public void unlockRead() {
-        lock.readLock().unlock();
-    }
-
-    @Override
     public void lockWrite() {
         lock.writeLock().lock();
     }
@@ -90,22 +80,6 @@ public class LocalOperationsRepository implements OperationsRepository {
         } finally {
             lock.writeLock().unlock();
         }    }
-
-    @Override
-    public void removeFromStart(int numberToRemove) {
-        lock.writeLock().lock();
-        if (numberToRemove > operations.size()) {
-            throw new IllegalArgumentException("Too many operations to remove");
-        }
-        try {
-            while (numberToRemove > 0) {
-                operations.removeFirst();
-                --numberToRemove;
-            }
-        } finally {
-            lock.writeLock().unlock();
-        }
-    }
 
     @Override
     public void clear() {
