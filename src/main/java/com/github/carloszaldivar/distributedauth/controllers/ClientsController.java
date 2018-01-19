@@ -77,7 +77,7 @@ public class ClientsController {
         }
         logger.info("Removed client " + clientNumber);
         (new FatRequestsSender(neighboursRepository, operationsRepository)).sendFatRequests();
-        DistributedAuthApplication.setState(DistributedAuthApplication.State.UNSYNCHRONIZED);
+        DistributedAuthApplication.updateState();
         return new ResponseEntity(HttpStatus.NO_CONTENT);
     }
 
@@ -101,7 +101,7 @@ public class ClientsController {
         if (isAuthorized) {
             (new FatRequestsSender(neighboursRepository, operationsRepository)).sendFatRequests();
         }
-        DistributedAuthApplication.setState(DistributedAuthApplication.State.UNSYNCHRONIZED);
+        DistributedAuthApplication.updateState();
         return new ResponseEntity(status);
     }
 
@@ -116,7 +116,7 @@ public class ClientsController {
         if (isActivated) {
             (new FatRequestsSender(neighboursRepository, operationsRepository)).sendFatRequests();
         }
-        DistributedAuthApplication.setState(DistributedAuthApplication.State.UNSYNCHRONIZED);
+        DistributedAuthApplication.updateState();
         return new ResponseEntity(status);
     }
 

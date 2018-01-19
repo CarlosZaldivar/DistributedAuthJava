@@ -150,6 +150,7 @@ public class FatRequestController {
         apply(historyDifference);
         updateSyncTimes(fatRequest.getSyncTimes());
         DistributedAuthApplication.setState(DistributedAuthApplication.State.UNSYNCHRONIZED);
+        DistributedAuthApplication.updateState();
         return new FatRequestResponse(serverName, FatRequestResponse.Status.OK,
                 neighboursRepository.getSyncTimes(), requestTimesamp, operationsRepository.getLast().getTimestamp());
     }
@@ -168,6 +169,7 @@ public class FatRequestController {
 
         updateSyncTimes(fatRequest.getSyncTimes());
         DistributedAuthApplication.setState(DistributedAuthApplication.State.UNSYNCHRONIZED);
+        DistributedAuthApplication.updateState();
         DistributedAuthApplication.setLastConflictResolution(requestTimestamp);
         return new FatRequestResponse(serverName, FatRequestResponse.Status.FIXED, neighboursRepository.getSyncTimes(), requestTimestamp,
                 operationsRepository.getLast().getTimestamp());
