@@ -36,7 +36,7 @@ public class ClientsController {
         this.operationsRepository = operationsRepository;
     }
 
-    @RequestMapping(method=POST, value={"/clients"})
+    @RequestMapping(method=POST, value={"/public/clients"})
     public ResponseEntity create(@RequestBody Client client) {
         checkServerState();
         validateClient(client);
@@ -54,13 +54,13 @@ public class ClientsController {
         return new ResponseEntity(HttpStatus.CREATED);
     }
 
-    @RequestMapping(method=GET, value={"/clients"})
+    @RequestMapping(method=GET, value={"/public/clients"})
     public ResponseEntity<Collection<Client>> list() {
         logger.info("Returning list of clients.");
         return new ResponseEntity<>(new ArrayList<>(clientsRepository.getAll().values()), HttpStatus.OK);
     }
 
-    @RequestMapping(method=DELETE, value={"/clients/{id}"})
+    @RequestMapping(method=DELETE, value={"/public/clients/{id}"})
     public ResponseEntity delete(@PathVariable(value="id") String clientNumber) {
         checkServerState();
         validateClientNumber(clientNumber);
@@ -78,7 +78,7 @@ public class ClientsController {
         return new ResponseEntity(HttpStatus.NO_CONTENT);
     }
 
-    @RequestMapping(method=POST, value={"/clients/{id}/authenticate"})
+    @RequestMapping(method=POST, value={"/public/clients/{id}/authenticate"})
     public ResponseEntity authenticate(@PathVariable(value="id") String clientNumber, @RequestBody String pin) {
         validateClientNumber(clientNumber);
         HttpStatus status = tryToAuthenticate(clientNumber, pin) ? HttpStatus.OK : HttpStatus.UNAUTHORIZED;
@@ -86,7 +86,7 @@ public class ClientsController {
         return new ResponseEntity(status);
     }
 
-    @RequestMapping(method=POST, value={"/clients/{id}/authorize"})
+    @RequestMapping(method=POST, value={"/public/clients/{id}/authorize"})
     public ResponseEntity authorizeOperation(@PathVariable(value="id") String clientNumber, @RequestBody AuthorizationRequest request)
     {
         validateClientNumber(clientNumber);
@@ -100,7 +100,7 @@ public class ClientsController {
         return new ResponseEntity(status);
     }
 
-    @RequestMapping(method=POST, value={"/clients/{id}/activatelist"})
+    @RequestMapping(method=POST, value={"/public/clients/{id}/activatelist"})
     public ResponseEntity activateNewPasswordList(@PathVariable(value="id") String clientNumber, @RequestBody AuthorizationRequest request) {
         validateClientNumber(clientNumber);
         validateAuthorizationData(request);

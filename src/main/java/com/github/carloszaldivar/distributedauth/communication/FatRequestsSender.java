@@ -85,7 +85,7 @@ public class FatRequestsSender {
             throw new RuntimeException(e);
         }
 
-        HttpPost httpRequest = new HttpPost(neighbour.getUrl() + "/fat");
+        HttpPost httpRequest = new HttpPost(neighbour.getUrl() + "/private/fat");
         httpRequest.setHeader("Content-Type", "application/json");
         try {
             httpRequest.setEntity(new StringEntity(jsonFatRequest));

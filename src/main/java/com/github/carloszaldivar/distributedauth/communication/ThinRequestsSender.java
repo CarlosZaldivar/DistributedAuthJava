@@ -164,7 +164,7 @@ public class ThinRequestsSender {
             throw new RuntimeException(e);
         }
 
-        HttpPost httpRequest = new HttpPost(neighbour.getUrl() + "/thin");
+        HttpPost httpRequest = new HttpPost(neighbour.getUrl() + "/private/thin");
         httpRequest.setHeader("Content-Type", "application/json");
         try {
             httpRequest.setEntity(new StringEntity(jsonThinRequest));

@@ -33,7 +33,7 @@ public class ThinRequestController {
         this.operationsRepository = operationsRepository;
     }
 
-    @RequestMapping(method=POST, value={"/thin"})
+    @RequestMapping(method=POST, value={"/private/thin"})
     public ResponseEntity<ThinRequestResponse> handleThinRequest(@RequestBody ThinRequest thinRequest) {
         logger.info("Received ThinRequest from " + thinRequest.getSenderId());
         Operation lastOperation = operationsRepository.getLast();

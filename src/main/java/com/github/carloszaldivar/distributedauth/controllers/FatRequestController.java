@@ -40,7 +40,7 @@ public class FatRequestController {
         this.operationsRepository = operationsRepository;
     }
 
-    @RequestMapping(method=POST, value={"/fat"})
+    @RequestMapping(method=POST, value={"/private/fat"})
     public ResponseEntity<FatRequestResponse> handleFatRequest(@RequestBody FatRequest fatRequest) {
         validateFatRequest(fatRequest);
         logger.info("Got FatRequest from " + fatRequest.getSenderId());

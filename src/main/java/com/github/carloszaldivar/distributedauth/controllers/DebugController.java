@@ -27,7 +27,7 @@ public class DebugController {
     @Autowired
     private OperationsRepository operationsRepository;
 
-    @RequestMapping(method=POST, value={"/debug/clear"})
+    @RequestMapping(method=POST, value={"/protected/debug/clear"})
     public ResponseEntity clear() {
         logger.info("Clearing server data.");
         neighboursRepository.clear();
@@ -37,7 +37,7 @@ public class DebugController {
         return new ResponseEntity(HttpStatus.OK);
     }
 
-    @RequestMapping(method=POST, value={"/debug/thinrequests"})
+    @RequestMapping(method=POST, value={"/protected/debug/thinrequests"})
     public ResponseEntity thinRequestsStatus(@RequestBody boolean status) {
         if (status) {
             logger.info("Enabling ThinRequestsSender.");

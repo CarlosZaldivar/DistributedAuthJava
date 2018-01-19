@@ -60,7 +60,7 @@ public class AuthRequestsSender {
     }
 
     private HttpPost createAuthenticationHttpRequest(Neighbour specialNeighbour, String clientNumber, String pin) {
-        String url = String.format("%s/clients/%s/authenticate", specialNeighbour.getUrl(), clientNumber);
+        String url = String.format("%s/public/clients/%s/authenticate", specialNeighbour.getUrl(), clientNumber);
         return createHttpRequest(url, pin);
     }
 
@@ -74,12 +74,12 @@ public class AuthRequestsSender {
             throw new RuntimeException(e);
         }
 
-        String url = String.format("%s/clients/%s/softauthorize/operation", specialNeighbour.getUrl(), clientNumber);
+        String url = String.format("%s/public/clients/%s/checkpass", specialNeighbour.getUrl(), clientNumber);
         return createHttpRequest(url, requestBody);
     }
 
     private HttpPost createNewPasswordListAuthorizationHttpRequest(Neighbour specialNeighbour, String clientNumber, AuthorizationRequest authorizationRequest) {
-        String url = String.format("%s/clients/%s/softauthorize/list", specialNeighbour.getUrl(), clientNumber);
+        String url = String.format("%s/public/clients/%s/checkpass", specialNeighbour.getUrl(), clientNumber);
         ObjectMapper mapper = new ObjectMapper();
         String requestBody;
         try {

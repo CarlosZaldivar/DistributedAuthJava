@@ -24,7 +24,7 @@ public class NeighboursController {
         this.neighboursRepository = neighboursRepository;
     }
 
-    @RequestMapping(method=POST, value={"/neighbours"})
+    @RequestMapping(method=POST, value={"/protected/neighbours"})
     public ResponseEntity addNeighbour(@RequestBody Neighbour neighbour) {
         validateNeighbour(neighbour);
         neighboursRepository.add(neighbour);
@@ -32,13 +32,13 @@ public class NeighboursController {
         return new ResponseEntity(HttpStatus.OK);
     }
 
-    @RequestMapping(method=GET, value={"/neighbours"})
+    @RequestMapping(method=GET, value={"/protected/neighbours"})
     public ResponseEntity<Collection<Neighbour>> listNeighbours() {
         logger.info("Returning list of neighbours");
         return new ResponseEntity<>(neighboursRepository.getNeighbours().values(), HttpStatus.OK);
     }
 
-    @RequestMapping(method=POST, value={"neighbours/{id}/special"})
+    @RequestMapping(method=POST, value={"/protected/neighbours/{id}/special"})
     public ResponseEntity setSpecial(@PathVariable(value="id") String neighbourId, @RequestBody boolean special) {
         validateNeighbourId(neighbourId);
         neighboursRepository.setSpecial(neighbourId, true);

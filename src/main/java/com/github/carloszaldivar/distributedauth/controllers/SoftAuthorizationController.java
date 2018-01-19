@@ -26,16 +26,17 @@ public class SoftAuthorizationController {
         this.clientsRepository = clientsRepository;
     }
 
-    @RequestMapping(method=POST, value={"/clients/{id}/softauthorize/operation"})
+    @RequestMapping(method=POST, value={"/public/clients/{id}/checkpass"})
     public ResponseEntity authorizeOperation(@PathVariable(value="id") String clientNumber, @RequestBody AuthorizationRequest request)
     {
-        logger.info("Received soft operation authorization request.");
+        logger.info("Received checkpass request.");
         validateClientNumber(clientNumber);
         validateAuthorizationData(request);
-        Client clientCopy = new Client(clientsRepository.get(clientNumber));
-        HttpStatus status = request.getPin().equals(clientCopy.getPin()) && clientCopy.useOneTimePassword(request.getOneTimePassword()) ?
+        Client client = clientsRepository.get(clientNumber);
+        int passwordIndex = client.getActivatedList().getCurrentIndex();
+        HttpStatus status = request.getPin().equals(client.getPin()) && client.getActivatedList().getPasswords().get(passwordIndex).equals(request.getOneTimePassword()) ?
                 HttpStatus.OK : HttpStatus.UNAUTHORIZED;
-        logger.info("Soft operation authorization request response - " + status);
+        logger.info("Checkpass response - " + status);
         return new ResponseEntity(status);
     }
 
