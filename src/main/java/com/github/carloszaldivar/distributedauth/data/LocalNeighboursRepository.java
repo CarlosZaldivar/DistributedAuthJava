@@ -39,12 +39,9 @@ public class LocalNeighboursRepository implements NeighboursRepository {
 
     @Override
     public void setSpecial(String neighbourId, boolean value) {
-        validateNeighbourId(neighbourId);
         lock.writeLock().lock();
         try {
-            if (!neighbours.containsKey(neighbourId)) {
-                throw new IllegalArgumentException("No neighbour with ID " + neighbourId);
-            }
+            validateNeighbourId(neighbourId);
             Neighbour neighbour = neighbours.get(neighbourId);
             neighbours.put(neighbourId, new Neighbour(neighbour.getId(), neighbour.getUrl(), value));
         } finally {
@@ -89,10 +86,10 @@ public class LocalNeighboursRepository implements NeighboursRepository {
             throw new IllegalArgumentException("Neighbour cannot be null.");
         }
         if (StringUtils.isEmpty(neighbour.getId())) {
-            throw new IllegalArgumentException("Neighbour ID cannot be null or empty");
+            throw new IllegalArgumentException("Neighbour ID cannot be null or empty.");
         }
         if (StringUtils.isEmpty(neighbour.getUrl())) {
-            throw new IllegalArgumentException("Neighbour URL cannot be null or empty");
+            throw new IllegalArgumentException("Neighbour URL cannot be null or empty.");
         }
     }
 

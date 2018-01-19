@@ -16,38 +16,40 @@ import static com.github.carloszaldivar.distributedauth.models.OneTimePasswordLi
 
 public class ClientsControllerTests {
     private NeighboursRepository neighboursRepository = new LocalNeighboursRepository();
+    private ClientsRepository clientsRepository = new LocalClientsRepository();
+    private OperationsRepository operationsRepository = new LocalOperationsRepository();
 
     @Test
     public void addingClientTest() {
-        Assert.assertEquals(0, Clients.get().size());
-        Assert.assertEquals(0, Operations.get().size());
-        ClientsController controller = new ClientsController(neighboursRepository);
+        Assert.assertEquals(0, clientsRepository.getAll().size());
+        Assert.assertEquals(0, clientsRepository.getAll().size());
+        ClientsController controller = new ClientsController(neighboursRepository, clientsRepository, operationsRepository);
         Client client = new Client("123456", "1234", null, null);
 
         controller.create(client);
 
-        Assert.assertEquals(1, Clients.get().size());
-        Assert.assertEquals(client, Clients.get().get("123456"));
-        Assert.assertEquals(1, Operations.get().size());
-        Assert.assertEquals(Operation.Type.ADDING_CLIENT, Operations.get().get(0).getType());
+        Assert.assertEquals(1, clientsRepository.getAll().size());
+        Assert.assertEquals(client, clientsRepository.get("123456"));
+        Assert.assertEquals(1, operationsRepository.getAll().size());
+        Assert.assertEquals(Operation.Type.ADDING_CLIENT, operationsRepository.getLast().getType());
     }
 
     @Test
     public void deletingClientTest() {
-        Assert.assertEquals(0, Clients.get().size());
-        Assert.assertEquals(0, Operations.get().size());
-        ClientsController controller = new ClientsController(neighboursRepository);
+        Assert.assertEquals(0, clientsRepository.getAll().size());
+        Assert.assertEquals(0, operationsRepository.getAll().size());
+        ClientsController controller = new ClientsController(neighboursRepository, clientsRepository, operationsRepository);
         Client client = new Client("123456", "1234", null, null);
 
         controller.create(client);
         controller.delete(client.getNumber());
 
-        Assert.assertEquals(0, Clients.get().size());
+        Assert.assertEquals(0, clientsRepository.getAll().size());
     }
 
     @Test
     public void authenticateTest() {
-        ClientsController controller = new ClientsController(neighboursRepository);
+        ClientsController controller = new ClientsController(neighboursRepository, clientsRepository, operationsRepository);
         Client client = new Client("123456", "1234", null, null);
 
         controller.create(client);
@@ -56,7 +58,7 @@ public class ClientsControllerTests {
 
     @Test
     public void authorizeTest() {
-        ClientsController controller = new ClientsController(neighboursRepository);
+        ClientsController controller = new ClientsController(neighboursRepository, clientsRepository, operationsRepository);
         Client client = new Client("123456", "1234", null, null);
 
         controller.create(client);
@@ -69,7 +71,7 @@ public class ClientsControllerTests {
 
     @Test
     public void activateNewListTest() {
-        ClientsController controller = new ClientsController(neighboursRepository);
+        ClientsController controller = new ClientsController(neighboursRepository, clientsRepository, operationsRepository);
         Client client = new Client("123456", "1234", null, null);
 
         controller.create(client);
@@ -84,9 +86,9 @@ public class ClientsControllerTests {
 
     @After
     public void cleanGlobalData() {
-        Clients.get().clear();
+        clientsRepository.clear();
+        operationsRepository.clear();
         neighboursRepository.clear();
-        Operations.get().clear();
         DistributedAuthApplication.setState(DistributedAuthApplication.State.SYNCHRONIZED);
     }
 }

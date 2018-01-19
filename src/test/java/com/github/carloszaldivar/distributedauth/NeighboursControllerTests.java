@@ -9,6 +9,8 @@ import org.junit.Test;
 
 public class NeighboursControllerTests {
     private NeighboursRepository neighboursRepository = new LocalNeighboursRepository();
+    private ClientsRepository clientsRepository = new LocalClientsRepository();
+    private OperationsRepository operationsRepository = new LocalOperationsRepository();
 
     @Test
     public void addingNeighbourTest() {
@@ -23,9 +25,10 @@ public class NeighboursControllerTests {
     }
 
     @After
-    public void cleanSingletons() {
-        Clients.get().clear();
+    public void cleanGlobalData() {
         neighboursRepository.clear();
-        Operations.get().clear();
+        operationsRepository.clear();
+        clientsRepository.clear();
+        DistributedAuthApplication.setState(DistributedAuthApplication.State.SYNCHRONIZED);
     }
 }

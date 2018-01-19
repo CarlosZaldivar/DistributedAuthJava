@@ -1,8 +1,6 @@
 package com.github.carloszaldivar.distributedauth;
 
-import com.github.carloszaldivar.distributedauth.data.LocalNeighboursRepository;
-import com.github.carloszaldivar.distributedauth.data.NeighboursRepository;
-import com.github.carloszaldivar.distributedauth.data.Operations;
+import com.github.carloszaldivar.distributedauth.data.*;
 import com.github.carloszaldivar.distributedauth.models.Neighbour;
 import com.github.carloszaldivar.distributedauth.models.Operation;
 import org.springframework.boot.SpringApplication;
@@ -18,6 +16,7 @@ public class DistributedAuthApplication {
 	private static State state = State.SYNCHRONIZED;
     private static long lastConflictResolution = 0;
     private static NeighboursRepository neighboursRepository = new LocalNeighboursRepository();
+    private static OperationsRepository operationsRepository = new LocalOperationsRepository();
 
     public enum State { SYNCHRONIZED, UNSYNCHRONIZED, CONFLICT, TOO_OLD }
     private static boolean historyCleaning = true;
@@ -35,11 +34,16 @@ public class DistributedAuthApplication {
      * Change state to SYNCHRONIZED if possible.
      */
 	public static void updateState() {
-	    if (isSynchronized()) {
-	        state = State.SYNCHRONIZED;
-	        if (historyCleaning && neighboursRepository.getNeighbours().size() > 0) {
-	            Operations.get().clear();
+	    operationsRepository.lockWrite();
+	    try {
+            if (isSynchronized()) {
+                state = State.SYNCHRONIZED;
+                if (historyCleaning && neighboursRepository.getNeighbours().size() > 0) {
+                    operationsRepository.clear();
+                }
             }
+        } finally {
+	        operationsRepository.unlockWrite();
         }
     }
 
@@ -73,7 +77,7 @@ public class DistributedAuthApplication {
             return false;
         }
 
-        List<Operation> operations = Operations.get();
+        List<Operation> operations = operationsRepository.getAll();
         if (operations.isEmpty()) {
             return true;
         }

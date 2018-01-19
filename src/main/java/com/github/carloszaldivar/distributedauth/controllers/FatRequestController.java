@@ -3,6 +3,7 @@ package com.github.carloszaldivar.distributedauth.controllers;
 import com.github.carloszaldivar.distributedauth.DistributedAuthApplication;
 import com.github.carloszaldivar.distributedauth.data.*;
 import com.github.carloszaldivar.distributedauth.models.*;
+import com.google.common.collect.ImmutableList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,15 +23,21 @@ import static org.springframework.web.bind.annotation.RequestMethod.POST;
 public class FatRequestController {
     private Logger logger = LoggerFactory.getLogger("com.github.carloszaldivar.distributedauth.controllers.FatRequestsController");
 
-    private List<Operation> localHistory;
+    private ImmutableList<Operation> localHistory;
     private List<Operation> neighbourHistory;
     private FatRequest fatRequest;
 
     @Autowired
     private NeighboursRepository neighboursRepository;
+    @Autowired
+    private OperationsRepository operationsRepository;
+    @Autowired
+    private ClientsRepository clientsRepository;
 
-    public FatRequestController(NeighboursRepository neighboursRepository) {
+    public FatRequestController(NeighboursRepository neighboursRepository, ClientsRepository clientsRepository, OperationsRepository operationsRepository) {
         this.neighboursRepository = neighboursRepository;
+        this.clientsRepository = clientsRepository;
+        this.operationsRepository = operationsRepository;
     }
 
     @RequestMapping(method=POST, value={"/fat"})
@@ -38,21 +45,26 @@ public class FatRequestController {
         validateFatRequest(fatRequest);
         logger.info("Got FatRequest from " + fatRequest.getSenderId());
         neighbourHistory = fatRequest.getHistory();
-        localHistory = Operations.get();
-        this.fatRequest = fatRequest;
+        operationsRepository.lockWrite();
+        try {
+            localHistory = operationsRepository.getAll();
+            this.fatRequest = fatRequest;
 
-        FatRequestResponse response;
-        if (localHistory.isEmpty()) {
-            response = handleEmptyLocalHistory(fatRequest.getTimestamp());
-        } else if (sameHistory()) {
-            response = handleSameHistory(fatRequest.getTimestamp());
-        } else {
-            response = handleDifferentHistories(fatRequest.getTimestamp());
+            FatRequestResponse response;
+            if (localHistory.isEmpty()) {
+                response = handleEmptyLocalHistory(fatRequest.getTimestamp());
+            } else if (sameHistory()) {
+                response = handleSameHistory(fatRequest.getTimestamp());
+            } else {
+                response = handleDifferentHistories(fatRequest.getTimestamp());
+            }
+
+            DistributedAuthApplication.updateState();
+            HttpStatus httpStatus = response.getStatus() == FatRequestResponse.Status.OK ? HttpStatus.OK : HttpStatus.CONFLICT;
+            return new ResponseEntity<>(response, httpStatus);
+        } finally {
+            operationsRepository.unlockWrite();
         }
-
-        DistributedAuthApplication.updateState();
-        HttpStatus httpStatus = response.getStatus() == FatRequestResponse.Status.OK ? HttpStatus.OK : HttpStatus.CONFLICT;
-        return new ResponseEntity<>(response, httpStatus);
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
@@ -129,7 +141,7 @@ public class FatRequestController {
 
     private FatRequestResponse handleLocalTooOld(DivergencePoint divergencePoint, long requestTimesamp) {
         List<Operation> historyDifference = neighbourHistory.subList(divergencePoint.getNeighbourHistoryIndex(), neighbourHistory.size());
-        localHistory.addAll(historyDifference);
+        operationsRepository.addToEnd(historyDifference);
         apply(historyDifference);
         updateSyncTimes(fatRequest.getSyncTimes());
         DistributedAuthApplication.setState(DistributedAuthApplication.State.UNSYNCHRONIZED);
@@ -140,13 +152,13 @@ public class FatRequestController {
         int localHistoryIndex = divergencePoint.getLocalHistoryIndex();
         List<Operation> historyToRemove = localHistory.subList(localHistoryIndex, localHistory.size());
         unapply(historyToRemove);
-        localHistory.removeAll(historyToRemove);
+        operationsRepository.removeFromEnd(historyToRemove.size());
         long lastCorrectTimestamp = localHistoryIndex > 0 ? localHistory.get(localHistoryIndex - 1).getTimestamp() : 0;
         downgradeSyncTimes(lastCorrectTimestamp);
 
         List<Operation> historyToAdd = neighbourHistory.subList(divergencePoint.getNeighbourHistoryIndex(), neighbourHistory.size());
         apply(historyToAdd);
-        localHistory.addAll(historyToAdd);
+        operationsRepository.addToEnd(historyToAdd);
 
         updateSyncTimes(fatRequest.getSyncTimes());
         DistributedAuthApplication.setState(DistributedAuthApplication.State.UNSYNCHRONIZED);
@@ -166,7 +178,7 @@ public class FatRequestController {
     }
 
     private FatRequestResponse handleEmptyLocalHistory(long requestTimestamp) {
-        localHistory.addAll(neighbourHistory);
+        operationsRepository.addToEnd(neighbourHistory);
         apply(neighbourHistory);
         updateSyncTimes(fatRequest.getSyncTimes());
         return new FatRequestResponse(FatRequestResponse.Status.OK, neighboursRepository.getSyncTimes(), requestTimestamp);
@@ -200,22 +212,21 @@ public class FatRequestController {
             switch (operation.getType()) {
                 case ADDING_CLIENT: {
                     Client newClient = operation.getClientAfter();
-                    Clients.get().put(newClient.getNumber(), newClient);
+                    clientsRepository.add(newClient);
                     break;
                 }
                 case REMOVING_CLIENT: {
-                    Client clientToRemove = operation.getClientBefore();
-                    Clients.get().remove(clientToRemove.getNumber());
+                    clientsRepository.delete(operation.getClientBefore().getNumber());
                     break;
                 }
                 case AUTHORIZATION: {
                     Client client = operation.getClientAfter();
-                    Clients.get().put(client.getNumber(), client);
+                    clientsRepository.update(client);
                     break;
                 }
                 case LIST_ACTIVATION: {
                     Client client = operation.getClientAfter();
-                    Clients.get().put(client.getNumber(), client);
+                    clientsRepository.update(client);
                     break;
                 }
                 default:
@@ -229,22 +240,22 @@ public class FatRequestController {
             switch (operation.getType()) {
                 case ADDING_CLIENT: {
                     String clientNumber = operation.getClientAfter().getNumber();
-                    Clients.get().remove(clientNumber);
+                    clientsRepository.delete(clientNumber);
                     break;
                 }
                 case REMOVING_CLIENT: {
                     Client client = operation.getClientBefore();
-                    Clients.get().put(client.getNumber(), client);
+                    clientsRepository.add(client);
                     break;
                 }
                 case AUTHORIZATION: {
                     Client client = operation.getClientBefore();
-                    Clients.get().put(client.getNumber(), client);
+                    clientsRepository.update(client);
                     break;
                 }
                 case LIST_ACTIVATION: {
                     Client client = operation.getClientBefore();
-                    Clients.get().put(client.getNumber(), client);
+                    clientsRepository.update(client);
                     break;
                 }
                 default:

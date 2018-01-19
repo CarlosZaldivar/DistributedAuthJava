@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.carloszaldivar.distributedauth.DistributedAuthApplication;
 import com.github.carloszaldivar.distributedauth.data.NeighboursRepository;
-import com.github.carloszaldivar.distributedauth.data.Operations;
+import com.github.carloszaldivar.distributedauth.data.OperationsRepository;
 import com.github.carloszaldivar.distributedauth.models.*;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.config.RequestConfig;
@@ -29,7 +29,9 @@ public class ThinRequestsSender {
     private Logger logger = LoggerFactory.getLogger("com.github.carloszaldivar.distributedauth.communication.ThinRequestsSender");
 
     @Autowired
-    NeighboursRepository neighboursRepository;
+    private NeighboursRepository neighboursRepository;
+    @Autowired
+    private OperationsRepository operationsRepository;
 
     @Scheduled(fixedRate = 1000)
     public void sendThinRequests() {
@@ -48,7 +50,7 @@ public class ThinRequestsSender {
             return;
         }
 
-        Operation lastOperation = Operations.get().get(Operations.get().size() - 1);
+        Operation lastOperation = operationsRepository.getLast();
         Map<String, Long> syncTimes = neighboursRepository.getSyncTimes();
         for (Neighbour neighbour : neighboursRepository.getNeighbours().values()) {
             if (syncTimes.get(neighbour.getId()) < lastOperation.getTimestamp()) {
@@ -59,7 +61,7 @@ public class ThinRequestsSender {
     }
 
     private void sendThinRequest(Neighbour neighbour, Map<String, Long> syncTimes, Operation lastOperation) {
-        ThinRequest thinRequest = new ThinRequest(neighbour.getId(), lastOperation.getHash(), syncTimes, System.currentTimeMillis());
+        ThinRequest thinRequest = new ThinRequest(DistributedAuthApplication.getInstanceName(), lastOperation.getHash(), syncTimes, System.currentTimeMillis());
         HttpPost httpRequest = createHttpRequest(thinRequest, neighbour);
 
         CloseableHttpAsyncClient client = HttpAsyncClients.createDefault();
@@ -122,7 +124,7 @@ public class ThinRequestsSender {
 
         switch (thinRequestResponse.getStatus()) {
             case UPDATE_NEEDED:
-                (new FatRequestsSender(neighboursRepository)).sendFatRequest(neighbour);
+                (new FatRequestsSender(neighboursRepository, operationsRepository)).sendFatRequest(neighbour);
                 break;
             case UPDATE_NOT_NEEDED:
                 updateSyncTimes(thinRequestResponse.getSyncTimes(), neighbour.getId(), lastOperation.getTimestamp());

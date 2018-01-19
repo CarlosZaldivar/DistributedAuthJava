@@ -3,10 +3,8 @@ package com.github.carloszaldivar.distributedauth.controllers;
 import com.github.carloszaldivar.distributedauth.DistributedAuthApplication;
 import com.github.carloszaldivar.distributedauth.communication.AuthRequestsSender;
 import com.github.carloszaldivar.distributedauth.communication.FatRequestsSender;
-import com.github.carloszaldivar.distributedauth.data.NeighboursRepository;
+import com.github.carloszaldivar.distributedauth.data.*;
 import com.github.carloszaldivar.distributedauth.models.*;
-import com.github.carloszaldivar.distributedauth.data.Clients;
-import com.github.carloszaldivar.distributedauth.data.Operations;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,9 +25,15 @@ public class ClientsController {
 
     @Autowired
     private NeighboursRepository neighboursRepository;
+    @Autowired
+    private ClientsRepository clientsRepository;
+    @Autowired
+    private OperationsRepository operationsRepository;
 
-    public ClientsController(NeighboursRepository neighboursRepository) {
+    public ClientsController(NeighboursRepository neighboursRepository, ClientsRepository clientsRepository, OperationsRepository operationsRepository) {
         this.neighboursRepository = neighboursRepository;
+        this.clientsRepository = clientsRepository;
+        this.operationsRepository = operationsRepository;
     }
 
     @RequestMapping(method=POST, value={"/clients"})
@@ -37,31 +41,39 @@ public class ClientsController {
         checkServerState();
         validateClient(client);
         client.generateOneTimePasswordLists();
-        Clients.get().put(client.getNumber(), client);
-        Operation addingClientOperation = createClientAddingOperation(System.currentTimeMillis(), client);
-        Operations.get().add(addingClientOperation);
+        operationsRepository.lockWrite();
+        try {
+            clientsRepository.add(client);
+            addClientAddingOperation(System.currentTimeMillis(), client);
+        } finally {
+            operationsRepository.unlockWrite();
+        }
         logger.info("Created client " + client.getNumber());
-        (new FatRequestsSender(neighboursRepository)).sendFatRequests();
+        (new FatRequestsSender(neighboursRepository, operationsRepository)).sendFatRequests();
         DistributedAuthApplication.setState(DistributedAuthApplication.State.UNSYNCHRONIZED);
         return new ResponseEntity(HttpStatus.CREATED);
     }
 
     @RequestMapping(method=GET, value={"/clients"})
-    public ResponseEntity<List<Client>> list() {
+    public ResponseEntity<Collection<Client>> list() {
         logger.info("Returning list of clients.");
-        return new ResponseEntity<>(new ArrayList<>(Clients.get().values()), HttpStatus.OK);
+        return new ResponseEntity<>(new ArrayList<>(clientsRepository.getAll().values()), HttpStatus.OK);
     }
 
     @RequestMapping(method=DELETE, value={"/clients/{id}"})
     public ResponseEntity delete(@PathVariable(value="id") String clientNumber) {
         checkServerState();
         validateClientNumber(clientNumber);
-        Client client = Clients.get().get(clientNumber);
-        Operation deletingClientOperation = createClientDeletingOperation(System.currentTimeMillis(), client);
-        Clients.get().remove(clientNumber);
-        Operations.get().add(deletingClientOperation);
-        logger.info("Removed client " + client.getNumber());
-        (new FatRequestsSender(neighboursRepository)).sendFatRequests();
+        operationsRepository.lockWrite();
+        try {
+            Client clientToRemove = clientsRepository.get(clientNumber);
+            clientsRepository.delete(clientNumber);
+            addClientDeletingOperation(System.currentTimeMillis(), clientToRemove);
+        } finally {
+            operationsRepository.unlockWrite();
+        }
+        logger.info("Removed client " + clientNumber);
+        (new FatRequestsSender(neighboursRepository, operationsRepository)).sendFatRequests();
         DistributedAuthApplication.setState(DistributedAuthApplication.State.UNSYNCHRONIZED);
         return new ResponseEntity(HttpStatus.NO_CONTENT);
     }
@@ -79,15 +91,12 @@ public class ClientsController {
     {
         validateClientNumber(clientNumber);
         validateAuthorizationData(request);
-        Client client = Clients.get().get(clientNumber);
-        Client clientBefore = new Client(client);
+        Client client = clientsRepository.get(clientNumber);
         boolean isAuthorized = tryToAuthorizeOperation(client, request);
-        if (isAuthorized) {
-            Operation authorizingOperation = createAuthorizingOperation(System.currentTimeMillis(), clientBefore, client);
-            Operations.get().add(authorizingOperation);
-        }
         HttpStatus status = isAuthorized ? HttpStatus.OK : HttpStatus.UNAUTHORIZED;
         logger.info(String.format("Client's %s operation authorization attempt. Result - %s", clientNumber, status));
+        (new FatRequestsSender(neighboursRepository, operationsRepository)).sendFatRequests();
+        DistributedAuthApplication.setState(DistributedAuthApplication.State.UNSYNCHRONIZED);
         return new ResponseEntity(status);
     }
 
@@ -95,16 +104,12 @@ public class ClientsController {
     public ResponseEntity activateNewPasswordList(@PathVariable(value="id") String clientNumber, @RequestBody AuthorizationRequest request) {
         validateClientNumber(clientNumber);
         validateAuthorizationData(request);
-        Client client = Clients.get().get(clientNumber);
-        Client clientBefore = new Client(client);
-
+        Client client = clientsRepository.get(clientNumber);
         boolean isActivated = tryToActivateNewPasswordList(client, request);
-        if (isActivated) {
-            Operation listActivationOperation = createListActivationOperation(System.currentTimeMillis(), clientBefore, client);
-            Operations.get().add(listActivationOperation);
-        }
         HttpStatus status = isActivated ? HttpStatus.OK : HttpStatus.UNAUTHORIZED;
         logger.info(String.format("Client's %s new password list activation attempt. Result - %s", clientNumber, status));
+        (new FatRequestsSender(neighboursRepository, operationsRepository)).sendFatRequests();
+        DistributedAuthApplication.setState(DistributedAuthApplication.State.UNSYNCHRONIZED);
         return new ResponseEntity(status);
     }
 
@@ -147,14 +152,14 @@ public class ClientsController {
             throw new IllegalArgumentException("PIN should consist of 4 digits.");
         }
 
-        if (Clients.get().containsKey(number)) {
+        if (clientsRepository.get(number) != null) {
             throw new IllegalArgumentException("Client with this number already exists.");
         }
     }
 
 
     private void validateClientNumber(String clientNumber) {
-        if (!Clients.get().containsKey(clientNumber)) {
+        if (!clientsRepository.getAll().containsKey(clientNumber)) {
             throw new IllegalArgumentException("No client with number " + clientNumber);
         }
     }
@@ -165,58 +170,6 @@ public class ClientsController {
         }
     }
 
-    private Operation createClientAddingOperation(long unixTimestamp, Client client) {
-        List<Operation> operations = Operations.get();
-        Operation lastOperation = null;
-        int number = 0;
-
-        if (!operations.isEmpty()) {
-            lastOperation = Operations.get().get(Operations.get().size() - 1);
-            number = lastOperation.getNumber();
-        }
-
-        return new Operation(unixTimestamp, Operation.Type.ADDING_CLIENT, number, null, client, lastOperation);
-    }
-
-    private Operation createClientDeletingOperation(long unixTimestamp, Client client) {
-        List<Operation> operations = Operations.get();
-        Operation lastOperation = null;
-        int number = 0;
-
-        if (!operations.isEmpty()) {
-            lastOperation = Operations.get().get(Operations.get().size() - 1);
-            number = lastOperation.getNumber();
-        }
-
-        return new Operation(unixTimestamp, Operation.Type.REMOVING_CLIENT, number, client, null, lastOperation);
-    }
-
-    private Operation createAuthorizingOperation(long unixTimestamp, Client clientBefore, Client clientAfter) {
-        List<Operation> operations = Operations.get();
-        Operation lastOperation = null;
-        int number = 0;
-
-        if (!operations.isEmpty()) {
-            lastOperation = Operations.get().get(Operations.get().size() - 1);
-            number = lastOperation.getNumber();
-        }
-
-        return new Operation(unixTimestamp, Operation.Type.AUTHORIZATION, number, clientBefore, clientAfter, lastOperation);
-    }
-
-    private Operation createListActivationOperation(long unixTimestamp, Client clientBefore, Client clientAfter) {
-        List<Operation> operations = Operations.get();
-        Operation lastOperation = null;
-        int number = 0;
-
-        if (!operations.isEmpty()) {
-            lastOperation = Operations.get().get(Operations.get().size() - 1);
-            number = lastOperation.getNumber();
-        }
-
-        return new Operation(unixTimestamp, Operation.Type.LIST_ACTIVATION, number, clientBefore, clientAfter, lastOperation);
-    }
-
     private boolean tryToAuthenticate(String clientNumber, String pin) {
         List<Neighbour> specialNeighbours = neighboursRepository.getNeighbours().values().stream().filter(Neighbour::isSpecial).collect(Collectors.toList());
         AuthRequestsSender requestsSender = new AuthRequestsSender();
@@ -225,7 +178,7 @@ public class ClientsController {
                 return false;
             }
         }
-        return Clients.get().get(clientNumber).getPin().equals(pin);
+        return clientsRepository.authenticateClient(clientNumber, pin);
     }
 
     private boolean tryToAuthorizeOperation(Client client, AuthorizationRequest request) {
@@ -236,7 +189,18 @@ public class ClientsController {
                 return false;
             }
         }
-        return request.getPin().equals(client.getPin()) && client.useOneTimePassword(request.getOneTimePassword());
+
+        Client clientBefore = new Client(client);
+        operationsRepository.lockWrite();
+        try {
+            boolean isAuthorized = clientsRepository.authorizeOperation(client.getNumber(), request.getPin(), request.getOneTimePassword());
+            if (isAuthorized) {
+                addAuthorizingOperation(System.currentTimeMillis(), clientBefore, client);
+            }
+            return isAuthorized;
+        } finally {
+            operationsRepository.unlockWrite();
+        }
     }
 
     private boolean tryToActivateNewPasswordList(Client client, AuthorizationRequest request) {
@@ -247,6 +211,46 @@ public class ClientsController {
                 return false;
             }
         }
-        return request.getPin().equals(client.getPin()) && client.activateNewOneTimePasswordList(request.getOneTimePassword());
+
+        Client clientBefore = new Client(client);
+        operationsRepository.lockWrite();
+        try {
+            boolean isAuthorized = clientsRepository.activateNewPasswordList(client.getNumber(), request.getPin(), request.getOneTimePassword());
+            if (isAuthorized) {
+                addListActivationOperation(System.currentTimeMillis(), clientBefore, client);
+            }
+            return isAuthorized;
+        } finally {
+            operationsRepository.unlockWrite();
+        }
+    }
+
+    private void addClientAddingOperation(long unixTimestamp, Client client) {
+        Operation lastOperation = operationsRepository.getLast();
+        int number = lastOperation != null ? lastOperation.getNumber() + 1 : 0;
+        Operation newOperation = new Operation(unixTimestamp, Operation.Type.ADDING_CLIENT, number, null, client, lastOperation);
+        operationsRepository.addToEnd(newOperation);
+    }
+
+    private void addClientDeletingOperation(long unixTimestamp, Client client) {
+        Operation lastOperation = operationsRepository.getLast();
+        int number = lastOperation != null ? lastOperation.getNumber() + 1 : 0;
+        Operation newOperation =  new Operation(unixTimestamp, Operation.Type.REMOVING_CLIENT, number, client, null, lastOperation);
+        operationsRepository.addToEnd(newOperation);
+    }
+
+
+    private void addAuthorizingOperation(long unixTimestamp, Client clientBefore, Client clientAfter) {
+        Operation lastOperation = operationsRepository.getLast();
+        int number = lastOperation != null ? lastOperation.getNumber() + 1 : 0;
+        Operation newOperation = new Operation(unixTimestamp, Operation.Type.AUTHORIZATION, number, clientBefore, clientAfter, lastOperation);
+        operationsRepository.addToEnd(newOperation);
+    }
+
+    private void addListActivationOperation(long unixTimestamp, Client clientBefore, Client clientAfter) {
+        Operation lastOperation = operationsRepository.getLast();
+        int number = lastOperation != null ? lastOperation.getNumber() + 1 : 0;
+        Operation newOperation = new Operation(unixTimestamp, Operation.Type.LIST_ACTIVATION, number, clientBefore, clientAfter, lastOperation);
+        operationsRepository.addToEnd(newOperation);
     }
 }

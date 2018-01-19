@@ -4,11 +4,12 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.carloszaldivar.distributedauth.DistributedAuthApplication;
 import com.github.carloszaldivar.distributedauth.data.NeighboursRepository;
-import com.github.carloszaldivar.distributedauth.data.Operations;
+import com.github.carloszaldivar.distributedauth.data.OperationsRepository;
 import com.github.carloszaldivar.distributedauth.models.FatRequest;
 import com.github.carloszaldivar.distributedauth.models.FatRequestResponse;
 import com.github.carloszaldivar.distributedauth.models.Neighbour;
 import com.github.carloszaldivar.distributedauth.models.Operation;
+import com.google.common.collect.ImmutableList;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpPost;
@@ -30,9 +31,11 @@ public class FatRequestsSender {
     private Logger logger = LoggerFactory.getLogger("com.github.carloszaldivar.distributedauth.communication.FatRequestsSender");
 
     private NeighboursRepository neighboursRepository;
+    private OperationsRepository operationsRepository;
 
-    public FatRequestsSender(NeighboursRepository neighboursRepository) {
+    public FatRequestsSender(NeighboursRepository neighboursRepository, OperationsRepository operationsRepository) {
         this.neighboursRepository = neighboursRepository;
+        this.operationsRepository = operationsRepository;
     }
 
     public void sendFatRequests() {
@@ -105,7 +108,7 @@ public class FatRequestsSender {
     private List<Operation> getHistoryDifference(Neighbour neighbour) {
         long syncTime = neighboursRepository.getSyncTimes().get(neighbour.getId());
         int i = 0;
-        List<Operation> operations = Operations.get();
+        ImmutableList<Operation> operations = operationsRepository.getAll();
         if (syncTime < operations.get(0).getTimestamp()) {
             return operations.subList(0, operations.size());
         }

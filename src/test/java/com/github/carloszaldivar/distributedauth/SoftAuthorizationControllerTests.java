@@ -16,13 +16,15 @@ import static com.github.carloszaldivar.distributedauth.models.OneTimePasswordLi
 
 public class SoftAuthorizationControllerTests {
     private NeighboursRepository neighboursRepository = new LocalNeighboursRepository();
+    private ClientsRepository clientsRepository = new LocalClientsRepository();
+    private OperationsRepository operationsRepository = new LocalOperationsRepository();
 
     @Test
     public void authorizeOperationTest() {
         Client client = new Client("123456", "1234", null, null);
-        ClientsController clientsController = new ClientsController(neighboursRepository);
+        ClientsController clientsController = new ClientsController(neighboursRepository, clientsRepository, operationsRepository);
         clientsController.create(client);
-        SoftAuthorizationController softAuthorizationController = new SoftAuthorizationController();
+        SoftAuthorizationController softAuthorizationController = new SoftAuthorizationController(clientsRepository);
 
         AuthorizationRequest request = new AuthorizationRequest(client.getPin(), client.getActivatedList().getPasswords().get(0));
         Assert.assertEquals(HttpStatus.OK, softAuthorizationController.authorizeOperation(client.getNumber(), request).getStatusCode());
@@ -31,7 +33,7 @@ public class SoftAuthorizationControllerTests {
     @Test
     public void activateNewListTest() {
         Client client = new Client("123456", "1234", null, null);
-        ClientsController clientsController = new ClientsController(neighboursRepository);
+        ClientsController clientsController = new ClientsController(neighboursRepository, clientsRepository, operationsRepository);
         clientsController.create(client);
 
         List<String> passwords = client.getActivatedList().getPasswords();
@@ -40,16 +42,16 @@ public class SoftAuthorizationControllerTests {
             clientsController.authorizeOperation(client.getNumber(), request);
         }
 
-        SoftAuthorizationController softAuthorizationController = new SoftAuthorizationController();
+        SoftAuthorizationController softAuthorizationController = new SoftAuthorizationController(clientsRepository);
         AuthorizationRequest request = new AuthorizationRequest(client.getPin(), passwords.get(PASSWORDS_PER_LIST - 1));
         Assert.assertEquals(HttpStatus.OK, softAuthorizationController.activateNewPasswordList(client.getNumber(), request).getStatusCode());
     }
 
     @After
     public void cleanGlobalData() {
-        Clients.get().clear();
         neighboursRepository.clear();
-        Operations.get().clear();
+        operationsRepository.clear();
+        clientsRepository.clear();
         DistributedAuthApplication.setState(DistributedAuthApplication.State.SYNCHRONIZED);
     }
 }
