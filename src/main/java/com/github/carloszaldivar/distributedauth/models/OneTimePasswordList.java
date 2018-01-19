@@ -7,7 +7,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class OneTimePasswordList {
+    @JsonProperty("Passwords")
     final private List<String> passwords;
+    @JsonProperty("CurrentIndex")
     private int currentIndex;
 
     public static final int PASSWORDS_PER_LIST = 10;
@@ -25,7 +27,7 @@ public class OneTimePasswordList {
     }
 
     @JsonCreator
-    public OneTimePasswordList(@JsonProperty("passwords") List<String> passwords, @JsonProperty("currentIndex") int currentIndex) {
+    public OneTimePasswordList(@JsonProperty("Passwords") List<String> passwords, @JsonProperty("CurrentIndex") int currentIndex) {
         this(passwords);
         this.currentIndex = currentIndex;
     }

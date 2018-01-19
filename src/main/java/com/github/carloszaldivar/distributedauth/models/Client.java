@@ -2,22 +2,28 @@ package com.github.carloszaldivar.distributedauth.models;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import org.apache.commons.text.CharacterPredicates;
 import org.apache.commons.text.RandomStringGenerator;
 
 import java.util.ArrayList;
 import java.util.List;
 
+@JsonPropertyOrder({"Id", "Pin", "ActivatedList", "NonactivatedList"})
 public class Client {
+    @JsonProperty("Id")
     private String number;
+    @JsonProperty("Pin")
     private String pin;
+    @JsonProperty("ActivatedList")
     private OneTimePasswordList activatedList;
+    @JsonProperty("NonactivatedList")
     private OneTimePasswordList nonactivatedList;
 
     @JsonCreator
-    public Client(@JsonProperty("number") String number, @JsonProperty("pin") String pin,
-                  @JsonProperty("activatedList") OneTimePasswordList activatedList,
-                  @JsonProperty("nonactivatedList") OneTimePasswordList nonactivatedList) {
+    public Client(@JsonProperty("Id") String number, @JsonProperty("Pin") String pin,
+                  @JsonProperty("ActivatedList") OneTimePasswordList activatedList,
+                  @JsonProperty("NonactivatedList") OneTimePasswordList nonactivatedList) {
         this.number = number;
         this.pin = pin;
         this.activatedList = activatedList;

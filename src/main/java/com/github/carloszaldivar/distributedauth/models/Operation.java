@@ -2,34 +2,36 @@ package com.github.carloszaldivar.distributedauth.models;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
 import org.apache.commons.codec.binary.Hex;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
-@JsonPropertyOrder({ "data", "hash", "number", "timestamp", "type" })
 public class Operation {
+    @JsonProperty("Hash")
     final private String hash;
+    @JsonProperty("Timestamp")
     final private long timestamp;
+    @JsonProperty("Type")
     final private Type type;
+    @JsonProperty("SequenceNumber")
     final private int number;
 
+    @JsonProperty("DataBefore")
     final private Client clientBefore;
+    @JsonProperty("DataAfter")
     final private Client clientAfter;
 
     @JsonCreator
-    public Operation(@JsonProperty("timestamp") long timestamp,
-                     @JsonProperty("type") Type type,
-                     @JsonProperty("number") int number,
-                     @JsonProperty("clientBefore") Client clientBefore,
-                     @JsonProperty("clientAfter") Client clientAfter,
-                     @JsonProperty("previousOperation") Operation previousOperation) {
+    public Operation(@JsonProperty("Timestamp") long timestamp,
+                     @JsonProperty("Type") Type type,
+                     @JsonProperty("SequenceNumber") int number,
+                     @JsonProperty("DataBefore") Client clientBefore,
+                     @JsonProperty("DataAfter") Client clientAfter,
+                     Operation previousOperation) {
         this.timestamp = timestamp;
         this.type = type;
         this.number = number;
@@ -88,16 +90,22 @@ public class Operation {
 
     private String calculateHash(Operation previousOperation) {
         ObjectMapper mapper = new ObjectMapper();
-        mapper.configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
-        mapper.configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true);
-        String prehashString;
+
+        String serializedBefore;
         try {
-            prehashString = mapper.writeValueAsString(this) +
-                    (previousOperation == null ? "" : previousOperation.getHash());
+            serializedBefore = mapper.writeValueAsString(clientBefore);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+        String serializedAfter;
+        try {
+            serializedAfter = mapper.writeValueAsString(clientAfter);
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
 
+        String prehashString = String.format("%s%s%s%s", type.toString(), serializedBefore, serializedAfter,
+                previousOperation == null ? "" : previousOperation.getHash());
         MessageDigest digest;
         try {
             digest = MessageDigest.getInstance("SHA-256");

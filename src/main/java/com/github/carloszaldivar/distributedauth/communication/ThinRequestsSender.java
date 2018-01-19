@@ -33,7 +33,7 @@ public class ThinRequestsSender {
     @Autowired
     private OperationsRepository operationsRepository;
 
-    private static boolean enabled;
+    private static boolean enabled = true;
 
     public static void setEnabled(boolean enabled) {
         ThinRequestsSender.enabled = enabled;
@@ -164,7 +164,7 @@ public class ThinRequestsSender {
             throw new RuntimeException(e);
         }
 
-        HttpPost httpRequest = new HttpPost(neighbour.getUrl() + "/private/thin");
+        HttpPost httpRequest = new HttpPost(neighbour.getUrl() + "/private/synchro/thin");
         httpRequest.setHeader("Content-Type", "application/json");
         try {
             httpRequest.setEntity(new StringEntity(jsonThinRequest));

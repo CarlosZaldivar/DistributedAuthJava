@@ -7,14 +7,18 @@ import java.util.List;
 import java.util.Map;
 
 public class FatRequest {
+    @JsonProperty("SenderId")
     final private String senderId;
+    @JsonProperty("History")
     final private List<Operation> history;
+    @JsonProperty("SynchroTimes")
     final private Map<String, Long> syncTimes;
+    @JsonProperty("RequestTimestamp")
     final private long timestamp;
 
     @JsonCreator
-    public FatRequest(@JsonProperty("senderId") String senderId, @JsonProperty("history") List<Operation> history,
-                      @JsonProperty("syncTimes") Map<String, Long> syncTimes, @JsonProperty("timestamp") long timestamp) {
+    public FatRequest(@JsonProperty("SenderId") String senderId, @JsonProperty("History") List<Operation> history,
+                      @JsonProperty("SynchroTimes") Map<String, Long> syncTimes, @JsonProperty("RequestTimestamp") long timestamp) {
         this.senderId = senderId;
         this.history = history;
         this.syncTimes = syncTimes;

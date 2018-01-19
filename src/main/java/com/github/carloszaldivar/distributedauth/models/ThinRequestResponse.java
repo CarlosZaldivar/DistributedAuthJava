@@ -6,13 +6,16 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Map;
 
 public class ThinRequestResponse {
+    @JsonProperty("Type")
     final private Status status;
+    @JsonProperty("SynchroTimes")
     final private Map<String, Long> syncTimes;
+    @JsonProperty("SynchroTimestamp")
     final private long timestamp;
 
     @JsonCreator
-    public ThinRequestResponse(@JsonProperty("status") Status status, @JsonProperty("syncTimes") Map<String, Long> syncTimes,
-                               @JsonProperty("timestamp") long timestamp) {
+    public ThinRequestResponse(@JsonProperty("Type") Status status, @JsonProperty("SynchroTimes") Map<String, Long> syncTimes,
+                               @JsonProperty("SynchroTimestamp") long timestamp) {
         this.status = status;
         this.syncTimes = syncTimes;
         this.timestamp = timestamp;
