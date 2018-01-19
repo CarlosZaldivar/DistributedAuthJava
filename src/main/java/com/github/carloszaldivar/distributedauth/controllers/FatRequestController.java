@@ -27,6 +27,8 @@ public class FatRequestController {
     private List<Operation> neighbourHistory;
     private FatRequest fatRequest;
 
+    private String serverName = DistributedAuthApplication.getInstanceName();
+
     @Autowired
     private NeighboursRepository neighboursRepository;
     @Autowired
@@ -81,13 +83,15 @@ public class FatRequestController {
                 return handleLocalTooOld(divergencePoint, requestTimestamp);
             case NEIGHBOUR_TOO_OLD:
                 logger.info("Sender's history was not up to date. Informing him about it.");
-                return new FatRequestResponse(FatRequestResponse.Status.U2OLD, neighboursRepository.getSyncTimes(), requestTimestamp);
+                return new FatRequestResponse(serverName, FatRequestResponse.Status.U2OLD, neighboursRepository.getSyncTimes(), requestTimestamp,
+                        operationsRepository.getLast().getTimestamp());
             case LOCAL_NOT_CORRECT:
                 logger.info("Local history was incorrect. Fixing it.");
                 return handleLocalNotCorrect(divergencePoint, requestTimestamp);
             case NEIGHBOUR_NOT_CORRECT:
                 logger.info("Sender's history was incorrect. Informing him about it.");
-                return new FatRequestResponse(FatRequestResponse.Status.CONFLICT, neighboursRepository.getSyncTimes(), requestTimestamp);
+                return new FatRequestResponse(serverName, FatRequestResponse.Status.CONFLICT, neighboursRepository.getSyncTimes(), requestTimestamp,
+                        operationsRepository.getLast().getTimestamp());
             default:
                 throw new RuntimeException("Unexpected divergence point.");
         }
@@ -145,7 +149,8 @@ public class FatRequestController {
         apply(historyDifference);
         updateSyncTimes(fatRequest.getSyncTimes());
         DistributedAuthApplication.setState(DistributedAuthApplication.State.UNSYNCHRONIZED);
-        return new FatRequestResponse(FatRequestResponse.Status.OK, neighboursRepository.getSyncTimes(), requestTimesamp);
+        return new FatRequestResponse(serverName, FatRequestResponse.Status.OK,
+                neighboursRepository.getSyncTimes(), requestTimesamp, operationsRepository.getLast().getTimestamp());
     }
 
     private FatRequestResponse handleLocalNotCorrect(DivergencePoint divergencePoint, long requestTimestamp) {
@@ -163,12 +168,14 @@ public class FatRequestController {
         updateSyncTimes(fatRequest.getSyncTimes());
         DistributedAuthApplication.setState(DistributedAuthApplication.State.UNSYNCHRONIZED);
         DistributedAuthApplication.setLastConflictResolution(requestTimestamp);
-        return new FatRequestResponse(FatRequestResponse.Status.FIXED, neighboursRepository.getSyncTimes(), requestTimestamp);
+        return new FatRequestResponse(serverName, FatRequestResponse.Status.FIXED, neighboursRepository.getSyncTimes(), requestTimestamp,
+                operationsRepository.getLast().getTimestamp());
     }
 
     private FatRequestResponse handleSameHistory(long requestTimestamp) {
         updateSyncTimes(fatRequest.getSyncTimes());
-        return new FatRequestResponse(FatRequestResponse.Status.ALREADY_SYNC, neighboursRepository.getSyncTimes(), requestTimestamp);
+        return new FatRequestResponse(serverName, FatRequestResponse.Status.ALREADY_SYNC, neighboursRepository.getSyncTimes(), requestTimestamp,
+                operationsRepository.getLast().getTimestamp());
     }
 
     private boolean sameHistory() {
@@ -181,7 +188,8 @@ public class FatRequestController {
         operationsRepository.addToEnd(neighbourHistory);
         apply(neighbourHistory);
         updateSyncTimes(fatRequest.getSyncTimes());
-        return new FatRequestResponse(FatRequestResponse.Status.OK, neighboursRepository.getSyncTimes(), requestTimestamp);
+        return new FatRequestResponse(serverName, FatRequestResponse.Status.OK, neighboursRepository.getSyncTimes(), requestTimestamp,
+                operationsRepository.getLast().getTimestamp());
     }
 
     private void downgradeSyncTimes(long lastCorrectTimestamp) {

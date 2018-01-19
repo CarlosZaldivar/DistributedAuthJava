@@ -45,7 +45,7 @@ public class FatRequestsSender {
     }
 
     private void handleFatRequestResponse(Neighbour neighbour, List<Operation> historyDifferece, FatRequestResponse fatRequestResponse) {
-        if (fatRequestResponse.getTimestamp() < DistributedAuthApplication.getLastConflictResolution()) {
+        if (fatRequestResponse.getRequestTimestamp() < DistributedAuthApplication.getLastConflictResolution()) {
             return;
         }
 
