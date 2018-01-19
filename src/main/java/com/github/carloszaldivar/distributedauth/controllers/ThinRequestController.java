@@ -41,14 +41,14 @@ public class ThinRequestController {
         ThinRequestResponse response;
         if (lastOperation == null) {
             logger.info("Update needed. Asking sender to send FatRequest.");
-            response =  new ThinRequestResponse(ThinRequestResponse.Status.UPDATE_NEEDED, neighboursRepository.getSyncTimes(), thinRequest.getTimestamp());
+            response =  new ThinRequestResponse(ThinRequestResponse.Status.NEED_SYNC, neighboursRepository.getSyncTimes(), thinRequest.getTimestamp());
         } else if (thinRequest.getHash().equals(lastOperation.getHash())) {
             logger.info("Update not needed.");
             updateSyncTimes(thinRequest.getSyncTimes(), thinRequest.getSenderId(), lastOperation.getTimestamp());
-            response = new ThinRequestResponse(ThinRequestResponse.Status.UPDATE_NOT_NEEDED, neighboursRepository.getSyncTimes(), thinRequest.getTimestamp());
+            response = new ThinRequestResponse(ThinRequestResponse.Status.ALREADY_SYNC, neighboursRepository.getSyncTimes(), thinRequest.getTimestamp());
         } else {
             logger.info("Update needed. Asking sender to send FatRequest.");
-            response = new ThinRequestResponse(ThinRequestResponse.Status.UPDATE_NEEDED, neighboursRepository.getSyncTimes(), thinRequest.getTimestamp());
+            response = new ThinRequestResponse(ThinRequestResponse.Status.NEED_SYNC, neighboursRepository.getSyncTimes(), thinRequest.getTimestamp());
         }
 
         DistributedAuthApplication.updateState();

@@ -11,10 +11,10 @@ public class OperationTests {
 
     public OperationTests() {
         Client client1 = new Client("123456", "1234", null, null);
-        firstOperation = new Operation(100, Operation.Type.ADDING_CLIENT, 0, null, client1, null);
+        firstOperation = new Operation(100, Operation.Type.ADD_CLIENT, 0, null, client1, null);
 
         Client client2 = new Client("123457", "1234", null, null);
-        secondOperation = new Operation(100, Operation.Type.ADDING_CLIENT, 1, null, client2, firstOperation);
+        secondOperation = new Operation(100, Operation.Type.ADD_CLIENT, 1, null, client2, firstOperation);
     }
 
     @Test

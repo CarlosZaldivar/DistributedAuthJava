@@ -29,7 +29,7 @@ public class ThinRequestResponse {
         return syncTimes;
     }
 
-    public enum Status { UPDATE_NOT_NEEDED, UPDATE_NEEDED }
+    public enum Status { ALREADY_SYNC, NEED_SYNC }
 
     public long getTimestamp() {
         return timestamp;

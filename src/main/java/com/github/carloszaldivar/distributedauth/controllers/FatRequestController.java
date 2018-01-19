@@ -203,7 +203,9 @@ public class FatRequestController {
 
     private void updateSyncTimes(Map<String, Long> syncTimes) {
         long neighboursLastTimestamp = neighbourHistory.get(neighbourHistory.size() - 1).getTimestamp();
-        neighboursRepository.updateSyncTime(fatRequest.getSenderId(), neighboursLastTimestamp);
+        if (neighboursRepository.getNeighbours().containsKey(fatRequest.getSenderId())) {
+            neighboursRepository.updateSyncTime(fatRequest.getSenderId(), neighboursLastTimestamp);
+        }
 
         Map<String, Long> savedSyncTimes = neighboursRepository.getSyncTimes();
         for (Map.Entry<String, Long> syncTime : syncTimes.entrySet()) {
@@ -218,12 +220,12 @@ public class FatRequestController {
     private void apply(List<Operation> operations) {
         for (Operation operation : operations) {
             switch (operation.getType()) {
-                case ADDING_CLIENT: {
+                case ADD_CLIENT: {
                     Client newClient = operation.getClientAfter();
                     clientsRepository.add(new Client(newClient));
                     break;
                 }
-                case REMOVING_CLIENT: {
+                case DELETE_CLIENT: {
                     clientsRepository.delete(operation.getClientBefore().getNumber());
                     break;
                 }
@@ -246,12 +248,12 @@ public class FatRequestController {
     private void unapply(List<Operation> operations) {
         for (Operation operation : operations) {
             switch (operation.getType()) {
-                case ADDING_CLIENT: {
+                case ADD_CLIENT: {
                     String clientNumber = operation.getClientAfter().getNumber();
                     clientsRepository.delete(clientNumber);
                     break;
                 }
-                case REMOVING_CLIENT: {
+                case DELETE_CLIENT: {
                     Client client = operation.getClientBefore();
                     clientsRepository.add(new Client(client));
                     break;

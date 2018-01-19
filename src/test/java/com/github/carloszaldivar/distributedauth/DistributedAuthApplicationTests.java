@@ -28,11 +28,11 @@ public class DistributedAuthApplicationTests {
     private OperationsRepository operationsRepository = new LocalOperationsRepository();
 
     private Operation createFirstOperation(long timestamp) {
-        return new Operation(timestamp, Operation.Type.ADDING_CLIENT, 0, null, client1, null);
+        return new Operation(timestamp, Operation.Type.ADD_CLIENT, 0, null, client1, null);
     }
 
     private Operation createSecondOperation(long timestamp, Operation firstOperation, Client client) {
-        return new Operation(timestamp, Operation.Type.ADDING_CLIENT, 1, null, client2, firstOperation);
+        return new Operation(timestamp, Operation.Type.ADD_CLIENT, 1, null, client2, firstOperation);
     }
 
     public DistributedAuthApplicationTests() {
@@ -182,7 +182,7 @@ public class DistributedAuthApplicationTests {
 
         ThinRequestController thinRequestController = new ThinRequestController(neighboursRepository, operationsRepository);
         ThinRequestResponse response = thinRequestController.handleThinRequest(request).getBody();
-        Assert.assertEquals(ThinRequestResponse.Status.UPDATE_NOT_NEEDED, response.getStatus());
+        Assert.assertEquals(ThinRequestResponse.Status.ALREADY_SYNC, response.getStatus());
     }
 
     @Test
@@ -195,7 +195,7 @@ public class DistributedAuthApplicationTests {
 
         ThinRequestController thinRequestController = new ThinRequestController(neighboursRepository, operationsRepository);
         ThinRequestResponse response = thinRequestController.handleThinRequest(request).getBody();
-        Assert.assertEquals(ThinRequestResponse.Status.UPDATE_NEEDED, response.getStatus());
+        Assert.assertEquals(ThinRequestResponse.Status.NEED_SYNC, response.getStatus());
     }
 
     @After

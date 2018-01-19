@@ -31,7 +31,7 @@ public class ClientsControllerTests {
         Assert.assertEquals(1, clientsRepository.getAll().size());
         Assert.assertEquals(client, clientsRepository.get("123456"));
         Assert.assertEquals(1, operationsRepository.getAll().size());
-        Assert.assertEquals(Operation.Type.ADDING_CLIENT, operationsRepository.getLast().getType());
+        Assert.assertEquals(Operation.Type.ADD_CLIENT, operationsRepository.getLast().getType());
     }
 
     @Test

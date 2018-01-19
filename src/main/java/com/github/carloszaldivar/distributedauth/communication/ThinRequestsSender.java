@@ -134,10 +134,10 @@ public class ThinRequestsSender {
         }
 
         switch (thinRequestResponse.getStatus()) {
-            case UPDATE_NEEDED:
+            case NEED_SYNC:
                 (new FatRequestsSender(neighboursRepository, operationsRepository)).sendFatRequest(neighbour);
                 break;
-            case UPDATE_NOT_NEEDED:
+            case ALREADY_SYNC:
                 updateSyncTimes(thinRequestResponse.getSyncTimes(), neighbour.getId(), lastOperation.getTimestamp());
                 DistributedAuthApplication.updateState();
                 break;

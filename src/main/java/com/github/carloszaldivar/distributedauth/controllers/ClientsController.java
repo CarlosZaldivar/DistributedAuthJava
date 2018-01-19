@@ -228,14 +228,14 @@ public class ClientsController {
     private void addClientAddingOperation(long unixTimestamp, Client client) {
         Operation lastOperation = operationsRepository.getLast();
         int number = lastOperation != null ? lastOperation.getNumber() + 1 : 0;
-        Operation newOperation = new Operation(unixTimestamp, Operation.Type.ADDING_CLIENT, number, null, new Client(client), lastOperation);
+        Operation newOperation = new Operation(unixTimestamp, Operation.Type.ADD_CLIENT, number, null, new Client(client), lastOperation);
         operationsRepository.addToEnd(newOperation);
     }
 
     private void addClientDeletingOperation(long unixTimestamp, Client client) {
         Operation lastOperation = operationsRepository.getLast();
         int number = lastOperation != null ? lastOperation.getNumber() + 1 : 0;
-        Operation newOperation =  new Operation(unixTimestamp, Operation.Type.REMOVING_CLIENT, number, new Client(client), null, lastOperation);
+        Operation newOperation =  new Operation(unixTimestamp, Operation.Type.DELETE_CLIENT, number, new Client(client), null, lastOperation);
         operationsRepository.addToEnd(newOperation);
     }
 
