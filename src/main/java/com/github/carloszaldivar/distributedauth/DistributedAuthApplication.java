@@ -27,6 +27,7 @@ public class DistributedAuthApplication {
         } else {
 	        instanceName = "test-" + System.currentTimeMillis();
         }
+        historyCleaning = false;
         SpringApplication.run(DistributedAuthApplication.class, args);
 	}
 
