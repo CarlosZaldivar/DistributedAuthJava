@@ -64,8 +64,7 @@ public class FatRequestController {
             }
 
             DistributedAuthApplication.updateState();
-            HttpStatus httpStatus = response.getStatus() == FatRequestResponse.Status.OK ? HttpStatus.OK : HttpStatus.CONFLICT;
-            return new ResponseEntity<>(response, httpStatus);
+            return new ResponseEntity<>(response, HttpStatus.OK);
         } finally {
             operationsRepository.unlockWrite();
         }
@@ -116,7 +115,7 @@ public class FatRequestController {
             } else {
                 // It's possible that local history was reverted at some point but the updates that caused the reversion didn't
                 // reach the neighbour. In this case neighbour will be sending operations that we already know are incorrect.
-                return new DivergencePoint(localHistory.size() - 1, 0, DivergencePoint.Type.NEIGHBOUR_TOO_OLD);
+                return new DivergencePoint(localHistory.size() - 1, 0, DivergencePoint.Type.NEIGHBOUR_NOT_CORRECT);
             }
         }
 
