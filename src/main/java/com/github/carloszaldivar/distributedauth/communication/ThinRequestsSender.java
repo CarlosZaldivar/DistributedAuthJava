@@ -39,7 +39,7 @@ public class ThinRequestsSender {
         ThinRequestsSender.enabled = enabled;
     }
 
-    @Scheduled(fixedRate = 1000)
+    @Scheduled(fixedRate = 10 * 1000)
     public void sendThinRequests() {
         if (!enabled) {
             logger.info("Not sending thin requests - option disabled.");
@@ -61,6 +61,7 @@ public class ThinRequestsSender {
             return;
         }
 
+        logger.info("Sending thin requests");
         Operation lastOperation = operationsRepository.getLast();
         Map<String, Long> syncTimes = neighboursRepository.getSyncTimes();
         for (Neighbour neighbour : neighboursRepository.getNeighbours().values()) {
@@ -129,7 +130,7 @@ public class ThinRequestsSender {
     }
 
     private void handleThinRequestResponse(Neighbour neighbour, Operation lastOperation, ThinRequestResponse thinRequestResponse) {
-        if (thinRequestResponse.getTimestamp() < DistributedAuthApplication.getLastConflictResolution()) {
+        if (thinRequestResponse.getRequestTimestamp() < DistributedAuthApplication.getLastConflictResolution()) {
             return;
         }
 

@@ -80,7 +80,7 @@ public class DistributedAuthApplicationTests {
         FatRequestController fatRequestController = new FatRequestController(neighboursRepository, clientsRepository, operationsRepository);
         FatRequestResponse response = fatRequestController.handleFatRequest(request).getBody();
 
-        Assert.assertTrue(response.getStatus() == FatRequestResponse.Status.OK);
+        Assert.assertTrue(response.getStatus() == FatRequestResponse.Status.ALREADY_SYNC);
         Assert.assertEquals(1, operationsRepository.getAll().size());
         Assert.assertEquals(1, clientsRepository.getAll().size());
     }
@@ -144,7 +144,7 @@ public class DistributedAuthApplicationTests {
         FatRequestController fatRequestController = new FatRequestController(neighboursRepository, clientsRepository, operationsRepository);
         FatRequestResponse response = fatRequestController.handleFatRequest(request).getBody();
 
-        Assert.assertTrue(response.getStatus() == FatRequestResponse.Status.OK);
+        Assert.assertTrue(response.getStatus() == FatRequestResponse.Status.FIXED);
         Assert.assertEquals(2, operationsRepository.getAll().size());
         Assert.assertEquals(secondOperation.getHash(), operationsRepository.getAll().get(1).getHash());
     }
@@ -174,7 +174,7 @@ public class DistributedAuthApplicationTests {
         NeighboursController neighboursController = new NeighboursController(neighboursRepository);
         neighboursController.addNeighbour(neighbour);
 
-        String hash = "732621d1f7a1121720ad39d1d9b309909532dd8560bd7be06c29b91dde8fbffd";
+        String hash = "b4849c554df7985fd99c8071d5386622377e7f2d178ec321dc28d0c7ae7a83d3";
         ThinRequest request = new ThinRequest(neighbour.getId(), hash, new HashMap<>(), System.currentTimeMillis());
 
         Operation operation = createFirstOperation(100);

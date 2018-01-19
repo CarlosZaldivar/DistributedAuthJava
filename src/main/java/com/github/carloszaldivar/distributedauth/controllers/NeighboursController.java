@@ -1,5 +1,6 @@
 package com.github.carloszaldivar.distributedauth.controllers;
 
+import com.github.carloszaldivar.distributedauth.DistributedAuthApplication;
 import com.github.carloszaldivar.distributedauth.data.NeighboursRepository;
 import com.github.carloszaldivar.distributedauth.models.Neighbour;
 import org.slf4j.Logger;
@@ -29,6 +30,7 @@ public class NeighboursController {
         validateNeighbour(neighbour);
         neighboursRepository.add(neighbour);
         logger.info(String.format("Neighbour %s with URL %s added.", neighbour.getId(), neighbour.getUrl()));
+        DistributedAuthApplication.updateState();
         return new ResponseEntity(HttpStatus.OK);
     }
 

@@ -6,19 +6,26 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Map;
 
 public class ThinRequestResponse {
+    @JsonProperty("SenderId")
+    final private String senderId;
     @JsonProperty("Type")
     final private Status status;
     @JsonProperty("SynchroTimes")
     final private Map<String, Long> syncTimes;
+    @JsonProperty("RequestTimestamp")
+    final private long requestTimestamp;
     @JsonProperty("SynchroTimestamp")
-    final private long timestamp;
+    final private long syncTimestamp;
 
     @JsonCreator
-    public ThinRequestResponse(@JsonProperty("Type") Status status, @JsonProperty("SynchroTimes") Map<String, Long> syncTimes,
-                               @JsonProperty("SynchroTimestamp") long timestamp) {
+    public ThinRequestResponse(@JsonProperty("SenderId") String senderId, @JsonProperty("Type") Status status,
+                               @JsonProperty("SynchroTimes") Map<String, Long> syncTimes,
+                               @JsonProperty("RequestTimestamp") long requestTimestamp, @JsonProperty("SynchroTimestamp") long syncTimestamp) {
+        this.senderId = senderId;
         this.status = status;
         this.syncTimes = syncTimes;
-        this.timestamp = timestamp;
+        this.requestTimestamp = requestTimestamp;
+        this.syncTimestamp = syncTimestamp;
     }
 
     public Status getStatus() {
@@ -31,7 +38,7 @@ public class ThinRequestResponse {
 
     public enum Status { ALREADY_SYNC, NEED_SYNC }
 
-    public long getTimestamp() {
-        return timestamp;
+    public long getRequestTimestamp() {
+        return requestTimestamp;
     }
 }

@@ -37,12 +37,25 @@ public class DistributedAuthApplication {
 	public static void updateState() {
 	    operationsRepository.lockWrite();
 	    try {
-            if (isSynchronized()) {
+            DistributedAuthApplication.State currentState = DistributedAuthApplication.getState();
+            if (currentState == DistributedAuthApplication.State.TOO_OLD || currentState == DistributedAuthApplication.State.CONFLICT) {
+                return;
+            }
+
+            List<Operation> operations = operationsRepository.getAll();
+            if (operations.isEmpty()) {
                 state = State.SYNCHRONIZED;
-                if (historyCleaning && neighboursRepository.getNeighbours().size() > 0) {
-                    operationsRepository.clear();
+                return;
+            }
+
+            long lastTimestamp = operations.get(operations.size() - 1).getTimestamp();
+            for (Neighbour neighbour : neighboursRepository.getNeighbours().values()) {
+                if (neighboursRepository.getSyncTimes().get(neighbour.getId()) != lastTimestamp) {
+                    state = State.UNSYNCHRONIZED;
+                    return;
                 }
             }
+            state = State.SYNCHRONIZED;
         } finally {
 	        operationsRepository.unlockWrite();
         }
@@ -69,26 +82,6 @@ public class DistributedAuthApplication {
     }
 
     public static void setLastConflictResolution(long lastConflictResolution) {
-	    DistributedAuthApplication.lastConflictResolution = lastConflictResolution;
-    }
-
-    private static boolean isSynchronized() {
-        DistributedAuthApplication.State state = DistributedAuthApplication.getState();
-        if (state == DistributedAuthApplication.State.TOO_OLD || state == DistributedAuthApplication.State.CONFLICT) {
-            return false;
-        }
-
-        List<Operation> operations = operationsRepository.getAll();
-        if (operations.isEmpty()) {
-            return true;
-        }
-
-        long lastTimestamp = operations.get(operations.size() - 1).getTimestamp();
-        for (Neighbour neighbour : neighboursRepository.getNeighbours().values()) {
-            if (neighboursRepository.getSyncTimes().get(neighbour.getId()) != lastTimestamp) {
-                return false;
-            }
-        }
-        return true;
+        DistributedAuthApplication.lastConflictResolution = lastConflictResolution;
     }
 }

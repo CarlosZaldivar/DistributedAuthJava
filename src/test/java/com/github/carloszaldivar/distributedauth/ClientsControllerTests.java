@@ -42,8 +42,10 @@ public class ClientsControllerTests {
         Client client = new Client("123456", "1234", null, null);
 
         controller.create(client);
-        controller.delete(client.getNumber());
+        controller.delete(client.getNumber(), "0000");
+        Assert.assertEquals(1, clientsRepository.getAll().size());
 
+        controller.delete(client.getNumber(), "1234");
         Assert.assertEquals(0, clientsRepository.getAll().size());
     }
 
