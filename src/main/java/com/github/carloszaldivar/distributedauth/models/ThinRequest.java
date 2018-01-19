@@ -10,14 +10,14 @@ public class ThinRequest {
     final private String senderId;
     @JsonProperty("LastHash")
     final private String hash;
-    @JsonProperty("SynchroTimestamp")
+    @JsonProperty("SynchroTimes")
     final private Map<String, Long> syncTimes;
     @JsonProperty("Timestamp")
     final private long timestamp;
 
     @JsonCreator
     public ThinRequest(@JsonProperty("SenderId") String senderId, @JsonProperty("LastHash") String hash,
-                       @JsonProperty("SynchroTimestamp") Map<String, Long> syncTimes,
+                       @JsonProperty("SynchroTimes") Map<String, Long> syncTimes,
                        @JsonProperty("Timestamp") long timestamp) {
         this.senderId = senderId;
         this.hash = hash;

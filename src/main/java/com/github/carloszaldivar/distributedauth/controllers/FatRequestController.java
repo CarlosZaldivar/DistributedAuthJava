@@ -163,12 +163,12 @@ public class FatRequestController {
         updateSyncTimes(fatRequest.getSyncTimes());
         DistributedAuthApplication.setState(DistributedAuthApplication.State.UNSYNCHRONIZED);
         DistributedAuthApplication.setLastConflictResolution(requestTimestamp);
-        return new FatRequestResponse(FatRequestResponse.Status.OK, neighboursRepository.getSyncTimes(), requestTimestamp);
+        return new FatRequestResponse(FatRequestResponse.Status.FIXED, neighboursRepository.getSyncTimes(), requestTimestamp);
     }
 
     private FatRequestResponse handleSameHistory(long requestTimestamp) {
         updateSyncTimes(fatRequest.getSyncTimes());
-        return new FatRequestResponse(FatRequestResponse.Status.OK, neighboursRepository.getSyncTimes(), requestTimestamp);
+        return new FatRequestResponse(FatRequestResponse.Status.ALREADY_SYNC, neighboursRepository.getSyncTimes(), requestTimestamp);
     }
 
     private boolean sameHistory() {

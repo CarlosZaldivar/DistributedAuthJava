@@ -30,5 +30,11 @@ public class FatRequestResponse {
         return timestamp;
     }
 
-    public enum Status { OK, CONFLICT, U2OLD }
+    public enum Status {
+        OK,
+        ALREADY_SYNC,
+        CONFLICT,
+        FIXED,
+        U2OLD
+    }
 }

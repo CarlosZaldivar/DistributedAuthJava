@@ -31,7 +31,7 @@ public class Operation {
                      @JsonProperty("SequenceNumber") int number,
                      @JsonProperty("DataBefore") Client clientBefore,
                      @JsonProperty("DataAfter") Client clientAfter,
-                     Operation previousOperation) {
+                     @JsonProperty("previousOperation") Operation previousOperation) {
         this.timestamp = timestamp;
         this.type = type;
         this.number = number;
