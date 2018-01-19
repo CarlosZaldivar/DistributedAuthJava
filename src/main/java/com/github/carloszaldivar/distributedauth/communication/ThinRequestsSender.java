@@ -33,8 +33,19 @@ public class ThinRequestsSender {
     @Autowired
     private OperationsRepository operationsRepository;
 
+    private static boolean enabled;
+
+    public static void setEnabled(boolean enabled) {
+        ThinRequestsSender.enabled = enabled;
+    }
+
     @Scheduled(fixedRate = 1000)
     public void sendThinRequests() {
+        if (!enabled) {
+            logger.info("Not sending thin requests - option disabled.");
+            return;
+        }
+
         if (DistributedAuthApplication.getState() == DistributedAuthApplication.State.SYNCHRONIZED) {
             logger.info("Not sending thin requests - server synchronized.");
             return;
