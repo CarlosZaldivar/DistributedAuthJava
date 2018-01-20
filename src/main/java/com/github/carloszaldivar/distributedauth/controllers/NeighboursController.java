@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Collection;
 
+import static org.springframework.web.bind.annotation.RequestMethod.DELETE;
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static org.springframework.web.bind.annotation.RequestMethod.POST;
 
@@ -45,6 +46,14 @@ public class NeighboursController {
         validateNeighbourId(neighbourId);
         neighboursRepository.setSpecial(neighbourId, true);
         return new ResponseEntity(HttpStatus.OK);
+    }
+
+    @RequestMapping(method=DELETE, value={"/protected/neighbours/{id}"})
+    public ResponseEntity delete(@PathVariable(value="id") String neighbourId) {
+        validateNeighbourId(neighbourId);
+        logger.info("Removed neighbour " + neighbourId);
+        neighboursRepository.delete(neighbourId);
+        return new ResponseEntity(HttpStatus.NO_CONTENT);
     }
 
     @ExceptionHandler(IllegalArgumentException.class)

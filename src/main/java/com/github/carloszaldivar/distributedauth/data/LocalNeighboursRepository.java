@@ -38,6 +38,18 @@ public class LocalNeighboursRepository implements NeighboursRepository {
     }
 
     @Override
+    public void delete(String neighbourId) {
+        lock.writeLock().lock();
+        try {
+            validateNeighbourId(neighbourId);
+            neighbours.remove(neighbourId);
+            syncTimes.remove(neighbourId);
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    @Override
     public void setSpecial(String neighbourId, boolean value) {
         lock.writeLock().lock();
         try {

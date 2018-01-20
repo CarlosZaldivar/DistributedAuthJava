@@ -8,6 +8,7 @@ import org.springframework.stereotype.Repository;
 public interface NeighboursRepository {
     public ImmutableMap<String, Neighbour> getNeighbours();
     public void add(Neighbour neighbour);
+    public void delete(String neighbourId);
     public void setSpecial(String neighbourId, boolean value);
     public ImmutableMap<String, Long> getSyncTimes();
     public void updateSyncTime(String neighbourId, long timestamp);
