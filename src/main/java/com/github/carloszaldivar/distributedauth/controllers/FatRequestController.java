@@ -47,6 +47,10 @@ public class FatRequestController {
         validateFatRequest(fatRequest);
         logger.info("Got FatRequest from " + fatRequest.getSenderId());
         neighbourHistory = fatRequest.getHistory();
+        if (neighbourHistory.isEmpty()) {
+            return new ResponseEntity<>(new FatRequestResponse(serverName, FatRequestResponse.Status.ALREADY_SYNC, neighboursRepository.getSyncTimes(),
+                    fatRequest.getTimestamp(), operationsRepository.getLast().getTimestamp()), HttpStatus.OK);
+        }
         operationsRepository.lockWrite();
         try {
             localHistory = operationsRepository.getAll();
