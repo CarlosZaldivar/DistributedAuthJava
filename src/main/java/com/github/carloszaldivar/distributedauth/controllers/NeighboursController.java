@@ -12,9 +12,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Collection;
 
-import static org.springframework.web.bind.annotation.RequestMethod.DELETE;
-import static org.springframework.web.bind.annotation.RequestMethod.GET;
-import static org.springframework.web.bind.annotation.RequestMethod.POST;
+import static org.springframework.web.bind.annotation.RequestMethod.*;
 
 @RestController
 public class NeighboursController {
@@ -41,7 +39,7 @@ public class NeighboursController {
         return new ResponseEntity<>(neighboursRepository.getNeighbours().values(), HttpStatus.OK);
     }
 
-    @RequestMapping(method=POST, value={"/protected/neighbours/{id}/special"})
+    @RequestMapping(method=PUT, value={"/protected/neighbours/{id}/special"})
     public ResponseEntity setSpecial(@PathVariable(value="id") String neighbourId, @RequestBody boolean special) {
         validateNeighbourId(neighbourId);
         neighboursRepository.setSpecial(neighbourId, true);
