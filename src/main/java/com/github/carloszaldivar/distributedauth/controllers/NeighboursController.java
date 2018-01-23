@@ -42,7 +42,7 @@ public class NeighboursController {
     @RequestMapping(method=PUT, value={"/protected/neighbours/{id}/special"})
     public ResponseEntity setSpecial(@PathVariable(value="id") String neighbourId, @RequestBody boolean special) {
         validateNeighbourId(neighbourId);
-        neighboursRepository.setSpecial(neighbourId, true);
+        neighboursRepository.setSpecial(neighbourId, special);
         return new ResponseEntity(HttpStatus.OK);
     }
 
