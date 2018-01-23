@@ -39,7 +39,7 @@ public class ThinRequestsSender {
         ThinRequestsSender.enabled = enabled;
     }
 
-    @Scheduled(fixedRate = 10 * 1000)
+    @Scheduled(fixedRate = 5 * 1000)
     public void sendThinRequests() {
         if (!enabled) {
             logger.info("Not sending thin requests - option disabled.");
@@ -165,7 +165,7 @@ public class ThinRequestsSender {
             throw new RuntimeException(e);
         }
 
-        HttpPost httpRequest = new HttpPost(neighbour.getUrl() + "/private/synchro/thin");
+        HttpPost httpRequest = new HttpPost(String.format("http://%s/private/synchro/thin", neighbour.getUrl()));
         httpRequest.setHeader("Content-Type", "application/json");
         try {
             httpRequest.setEntity(new StringEntity(jsonThinRequest));
